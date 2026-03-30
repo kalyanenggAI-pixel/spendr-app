@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Spendr - Universal CSV Expense Tracker</title>
+  <style>
+    body { font-family: Arial; margin: 20px; background:#f9f9f9;}
+    textarea { width: 100%; height: 120px; margin-bottom: 10px;}
+    button { padding: 10px 20px; margin:5px; cursor:pointer;}
+    #expense-list { margin-top:20px; }
+    .txn { border-bottom: 1px solid #ddd; padding:5px 0; }
+    #ai-summary { margin-top:20px; white-space:pre-wrap; background:#fff; padding:10px; border-radius:5px; box-shadow:0 0 5px #ccc; }
+    canvas { margin-top:20px; background:#fff; border-radius:5px; padding:10px; box-shadow:0 0 5px #ccc; }
+  </style>
+</head>
+<body>
+
+<h1>Spendr - Expense Tracker</h1>
+
+<textarea id="csv-paste" placeholder="Paste your CSV here"></textarea><br/>
+<button id="btn-analyse">Analyze CSV</button>
+<button id="btn-clear">Clear All Transactions</button>
+
+<div id="upload-status"></div>
+
+<h2>Transactions</h2>
+<div id="expense-list"></div>
+
+<h2>Spend by Category</h2>
+<canvas id="categoryChart" width="400" height="200"></canvas>
+
+<h2>AI Insights</h2>
+<div id="ai-summary" class="hidden"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="app.js"></script>
+
+</body>
+</html>
