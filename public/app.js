@@ -371,7 +371,7 @@ function formatInsight(text) {
   });
 
   // Percentages
-  html = html.replace(/(\d+)%/g, '<span class="insight-stat">$1%</span>');
+  html = html.replace(/(\d+)%/g, '<span class="insight-chip neutral">$1%</span>');
 
   // Line breaks → paragraphs
   html = html.split(/\n{2,}/).map(p => {
@@ -476,11 +476,11 @@ function renderChart() {
               return '  $' + ctx.parsed.x.toFixed(2) + '  (' + pct + '%)';
             }
           },
-          backgroundColor: '#1a1a24',
-          borderColor:     'rgba(255,255,255,0.1)',
+          backgroundColor: '#ffffff',
+          borderColor: 'rgba(0,0,0,0.1)',
           borderWidth:     1,
-          titleColor:      '#e8e8f0',
-          bodyColor:       '#a0a0b0',
+          titleColor: '#111111',
+          bodyColor: '#666666',
           padding:         10,
         }
       },
@@ -492,11 +492,11 @@ function renderChart() {
             callback: v => '$' + v,
             font:     { family: "'JetBrains Mono', monospace", size: 10 }
           },
-          grid: { color: 'rgba(255,255,255,0.04)' },
+          grid: { color: 'rgba(0,0,0,0.05)' },
         },
         y: {
           ticks: {
-            color: '#a0a0b0',
+            color: '#666666',
             font:  { family: "'Syne', sans-serif", size: 11, weight: '500' }
           },
           grid: { display: false },
