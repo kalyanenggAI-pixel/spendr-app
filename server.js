@@ -44,7 +44,6 @@ Keep your response concise and friendly.`;
         'X-Title': 'Spendr Expense Tracker'
       },
       body: JSON.stringify({
-        // use a reliable free model on OpenRouter
         model: 'openrouter/free',
         messages: [{ role: 'user', content: prompt }],
         max_tokens: 500
@@ -53,17 +52,29 @@ Keep your response concise and friendly.`;
 
     const data = await response.json();
 
-    // Surface OpenRouter errors clearly in logs
+    // Log the full response so we can see exactly what came back
+    console.log('OpenRouter full response:', JSON.stringify(data, null, 2));
+
     if (data.error) {
       console.error('OpenRouter error:', data.error);
       return res.json({ insights: `⚠️ AI error: ${data.error.message}` });
     }
 
-    const insights = data.choices?.[0]?.message?.content || 'No insights generated.';
+    // Handle both possible response shapes
+    const insights =
+      data.choices?.[0]?.message?.content ||
+      data.choices?.[0]?.text ||
+      null;
+
+    if (!insights) {
+      // Return the raw response so we can debug from the UI
+      return res.json({ insights: `⚠️ Unexpected response shape:\n${JSON.stringify(data, null, 2)}` });
+    }
+
     res.json({ insights });
   } catch (err) {
     console.error('AI Insights error:', err);
-    res.json({ insights: '⚠️ Unable to fetch AI insights right now.' });
+    res.json({ insights: `⚠️ Server error: ${err.message}` });
   }
 });
 
