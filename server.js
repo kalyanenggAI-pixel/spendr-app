@@ -3,7 +3,7 @@ import cors from 'cors';
 import bodyParser from 'body-parser';
 import path from 'path';
 import { fileURLToPath } from 'url';
-import fetch from 'node-fetch'; // For calling OpenRouter / AI API
+import fetch from 'node-fetch';
 
 const app = express();
 app.use(cors());
@@ -15,15 +15,13 @@ const __dirname = path.dirname(__filename);
 // Serve frontend
 app.use(express.static(path.join(__dirname, 'public')));
 app.get('/', (req, res) => {
-  res.sendFile(path.join(__dirname, 'public', 'index.html'));
+  res.sendFile(path.join(__dirname, 'public', 'index.html')));
 });
 
 // AI Insights endpoint
 app.post('/ai-insights', async (req, res) => {
   try {
     const { newTransactions, historyTransactions } = req.body;
-
-    // Combine for AI advice
     const prompt = `
 Analyze these transactions and give insights. 
 New Transactions: ${JSON.stringify(newTransactions)}
@@ -33,7 +31,6 @@ Provide:
 2. Advice based on historical spend.
 `;
 
-    // Call OpenRouter / free LLM here
     const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
       method: 'POST',
       headers: {
@@ -54,6 +51,11 @@ Provide:
     console.error('AI Insights error:', err);
     res.json({ insights: '⚠️ Unable to fetch AI insights right now.' });
   }
+});
+
+// Fallback route (for SPA / unknown paths)
+app.get('*', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
 // Start server
