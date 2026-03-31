@@ -44,8 +44,8 @@ Keep your response concise and friendly.`;
         'X-Title': 'Spendr Expense Tracker'
       },
       body: JSON.stringify({
-        // meta-llama/llama-3.1-8b-instruct:free is a reliable free model on OpenRouter
-        model: 'meta-llama/llama-3.1-8b-instruct:free',
+        // use a reliable free model on OpenRouter
+        model: 'openrouter/free',
         messages: [{ role: 'user', content: prompt }],
         max_tokens: 500
       })
