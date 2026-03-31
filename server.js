@@ -7,7 +7,6 @@ import { fileURLToPath } from 'url';
 import fetch from 'node-fetch';
 
 const app = express();
-
 app.use(cors());
 app.use(bodyParser.json({ limit: '10mb' }));
 
@@ -16,37 +15,51 @@ const __dirname = path.dirname(__filename);
 
 app.use(express.static(path.join(__dirname, 'public')));
 
-// ── AI Insights endpoint ── MUST be before the SPA catch-all
+// ── AI Insights endpoint — MUST be before the SPA catch-all
 app.post('/ai-insights', async (req, res) => {
   try {
     const { newTransactions, historyTransactions } = req.body;
 
-    const prompt = `
-Analyze these transactions and give insights.
+    const prompt = `You are a personal finance assistant. Analyse these Australian bank transactions and give practical insights.
 
-New Transactions: ${JSON.stringify(newTransactions)}
-Historical Transactions: ${JSON.stringify(historyTransactions)}
+New Transactions:
+${JSON.stringify(newTransactions, null, 2)}
 
-Provide:
-1. Key patterns in new transactions.
-2. Advice based on historical spend.
-`;
+Historical Transactions (previous uploads):
+${JSON.stringify(historyTransactions?.slice(0, 50), null, 2)}
+
+Please provide:
+1. A brief summary of this week's spending by category.
+2. Any patterns or notable items worth flagging.
+3. One or two practical tips to reduce spend based on what you see.
+
+Keep your response concise and friendly.`;
 
     const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${process.env.OPENROUTER_API_KEY}`
+        'Authorization': `Bearer ${process.env.OPENROUTER_API_KEY}`,
+        'HTTP-Referer': 'https://spendr-app.onrender.com',
+        'X-Title': 'Spendr Expense Tracker'
       },
       body: JSON.stringify({
-        model: "openrouter/free",
-        messages: [{ role: 'user', content: prompt }]
+        // meta-llama/llama-3.1-8b-instruct:free is a reliable free model on OpenRouter
+        model: 'meta-llama/llama-3.1-8b-instruct:free',
+        messages: [{ role: 'user', content: prompt }],
+        max_tokens: 500
       })
     });
 
     const data = await response.json();
-    const insights = data.choices?.[0]?.message?.content || 'No insights generated';
 
+    // Surface OpenRouter errors clearly in logs
+    if (data.error) {
+      console.error('OpenRouter error:', data.error);
+      return res.json({ insights: `⚠️ AI error: ${data.error.message}` });
+    }
+
+    const insights = data.choices?.[0]?.message?.content || 'No insights generated.';
     res.json({ insights });
   } catch (err) {
     console.error('AI Insights error:', err);

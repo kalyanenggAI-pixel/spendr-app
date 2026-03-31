@@ -4,7 +4,7 @@
 
 const STORAGE_KEY = 'spendr_expenses';
 let expenses = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
-let categoryChart = null; // Chart.js instance
+let categoryChart = null;
 
 // ── INIT
 document.getElementById('btn-analyse').addEventListener('click', async () => {
@@ -35,24 +35,38 @@ document.getElementById('btn-clear').addEventListener('click', () => {
 function parseCSVUniversal(text) {
   const lines = text.split('\n').filter(l => l.trim());
   const firstRow = splitCSVLine(lines[0]);
-  const hasHeader = firstRow.some(c => c.toLowerCase().includes('date') || c.toLowerCase().includes('description'));
+
+  const hasHeader = firstRow.some(c =>
+    /date|description|amount|balance|type/i.test(c)
+  );
   const dataStart = hasHeader ? 1 : 0;
 
   return lines.slice(dataStart).map(line => {
     const cols = splitCSVLine(line);
 
-    const date = cols.find(c => /\d{2}\/\d{2}\/\d{4}/.test(c)) || '';
-    const desc = cols[2] || '';
+    // Date: find col matching dd/mm/yyyy or yyyy-mm-dd
+    const dateIdx = cols.findIndex(c => /\d{2}[\/\-]\d{2}[\/\-]\d{2,4}/.test(c));
+    const date = dateIdx >= 0 ? cols[dateIdx] : '';
 
-    let amount = 0;
-    for (let i = 3; i < cols.length; i++) {
-      const n = parseFloat(cols[i].replace(',', '.'));
-      if (!isNaN(n)) { amount = n; break; }
-    }
+    // Description: longest text-heavy column (not date, not pure number)
+    let descIdx = -1;
+    let longestLen = 0;
+    cols.forEach((c, i) => {
+      if (i === dateIdx) return;
+      if (/^\d[\d.,]*$/.test(c)) return;
+      if (c.length > longestLen) { longestLen = c.length; descIdx = i; }
+    });
+    const desc = descIdx >= 0 ? cols[descIdx] : '';
 
-    const type = cols.find(c => c && c.toLowerCase().includes('payment')) || '';
-    return { date, desc, amount, type, old: false };
-  });
+    // Amount: smallest positive number (balance is usually the larger number)
+    const numericCols = cols
+      .map((c, i) => ({ i, v: parseFloat(c.replace(/,/g, '')) }))
+      .filter(({ i, v }) => i !== dateIdx && !isNaN(v) && v > 0);
+    numericCols.sort((a, b) => a.v - b.v);
+    const amount = numericCols.length > 0 ? numericCols[0].v : 0;
+
+    return { date, desc, amount, old: false };
+  }).filter(r => r.amount > 0 && r.desc);
 }
 
 // ── CSV LINE SPLITTING
@@ -70,14 +84,12 @@ function splitCSVLine(line) {
   return result;
 }
 
-// ── EXPENSE DETECTION
-function isExpense(r) { return r.amount > 0; }
-
 // ── CLEAN DESCRIPTION
 function cleanDesc(desc) {
   return desc
     .toUpperCase()
-    .replace(/EFT DEBIT|DEBIT CARD PURCHASE|PAYMENT BY AUTHORITY|PAYMENT/g, '')
+    .replace(/DEBIT CARD PURCHASE|EFT DEBIT|PAYMENT BY AUTHORITY|CREDIT CARD PURCHASE/g, '')
+    .replace(/\b[A-Z]{3}\b$/g, '')   // trailing country codes like AUS
     .replace(/\d{6,}/g, '')
     .replace(/\d{2}\/\d{2}/g, '')
     .replace(/\s+/g, ' ')
@@ -87,12 +99,52 @@ function cleanDesc(desc) {
 // ── CATEGORY LOGIC
 function categorize(desc) {
   const d = desc.toLowerCase();
-  if (d.includes('transfer') || d.includes('osko') || d.includes('payid')) return 'Transfers';
-  if (d.includes('electricity') || d.includes('water') || d.includes('energy') || d.includes('telstra') || d.includes('optus')) return 'Bills & Utilities';
-  if (d.includes('coles') || d.includes('woolworths') || d.includes('aldi')) return 'Groceries';
-  if (d.includes('bunnings')) return 'Home';
-  if (d.includes('uber') || d.includes('taxi') || d.includes('fuel')) return 'Transport';
-  if (d.includes('cafe') || d.includes('restaurant') || d.includes('takeaway')) return 'Food & Dining';
+
+  if (d.includes('transfer') || d.includes('osko') || d.includes('payid') || d.includes('bpay')) return 'Transfers';
+
+  if (d.includes('aami') || d.includes('nrma') || d.includes('allianz') || d.includes('insurance') || d.includes('iselect')) return 'Insurance';
+
+  if (d.includes('electricity') || d.includes('energy') || d.includes('agl') ||
+      d.includes('origin') || d.includes('water') || d.includes('telstra') ||
+      d.includes('optus') || d.includes('vodafone') || d.includes('boost') ||
+      d.includes('prepaid') || d.includes('recharge') || d.includes('tpg') ||
+      d.includes('aussie broadband') || d.includes('internet')) return 'Bills & Utilities';
+
+  if (d.includes('department of transport') || d.includes('vicroads') || d.includes('service nsw') ||
+      d.includes('rego') || d.includes('registration')) return 'Government & Rego';
+
+  if (d.includes('coles') || d.includes('woolworths') || d.includes('aldi') ||
+      d.includes('iga') || d.includes('harris farm') || d.includes('costco') ||
+      d.includes('fresh produce') || d.includes('big fresh') || d.includes('big daddy')) return 'Groceries';
+
+  if (d.includes('chemist') || d.includes('pharmacy') || d.includes('priceline') ||
+      d.includes('amcal') || d.includes('terry white') || d.includes('medical') ||
+      d.includes('doctor') || d.includes('dental') || d.includes('hospital') ||
+      d.includes('pathology') || d.includes('health')) return 'Health & Pharmacy';
+
+  if (d.includes('bunnings') || d.includes('ikea') || d.includes('harvey norman') ||
+      d.includes('the good guys') || d.includes('jb hi') || d.includes('hardware')) return 'Home & Hardware';
+
+  if (d.includes('uber') || d.includes('taxi') || d.includes('didi') || d.includes('ola') ||
+      d.includes('fuel') || d.includes('7-eleven') || d.includes('bp ') || d.includes('shell') ||
+      d.includes('ampol') || d.includes('caltex') || d.includes('puma energy') ||
+      d.includes('metro trains') || d.includes('myki') || d.includes('transurban') ||
+      d.includes('citylink') || d.includes('eastlink') || d.includes('linkt')) return 'Transport & Fuel';
+
+  if (d.includes('cafe') || d.includes('restaurant') || d.includes('takeaway') ||
+      d.includes('mcdonald') || d.includes('kfc') || d.includes('hungry jacks') ||
+      d.includes('domino') || d.includes('pizza') || d.includes('subway') ||
+      d.includes('grill') || d.includes('bakery') || d.includes('sushi') ||
+      d.includes('thai') || d.includes('indian') || d.includes('chinese') ||
+      d.includes('noodle') || d.includes('eatery') || d.includes('diner') ||
+      d.includes('burrito') || d.includes('kebab') || d.includes('fish & chips')) return 'Food & Dining';
+
+  if (d.includes('netflix') || d.includes('spotify') || d.includes('disney') ||
+      d.includes('stan') || d.includes('binge') || d.includes('foxtel') ||
+      d.includes('apple') || d.includes('google play') || d.includes('youtube') ||
+      d.includes('amazon prime') || d.includes('cinema') || d.includes('event cinemas') ||
+      d.includes('hoyts')) return 'Entertainment';
+
   return 'Shopping';
 }
 
@@ -100,19 +152,22 @@ function categorize(desc) {
 async function processTransactionsUniversal(rows) {
   const now = new Date().toISOString();
 
-  const newTxns = rows
-    .filter(r => isExpense(r))
-    .map(r => {
-      const cleaned = cleanDesc(r.desc);
-      return {
-        id: Date.now() + Math.random(),
-        amount: r.amount,
-        cat: categorize(cleaned),
-        note: cleaned,
-        date: now,
-        old: false
-      };
-    });
+  const newTxns = rows.map(r => {
+    const cleaned = cleanDesc(r.desc);
+    return {
+      id: Date.now() + Math.random(),
+      amount: r.amount,
+      cat: categorize(cleaned),
+      note: cleaned,
+      date: r.date || now,
+      old: false
+    };
+  });
+
+  if (newTxns.length === 0) {
+    setStatus('⚠️ No valid expense rows found in CSV', 'error');
+    return;
+  }
 
   expenses = expenses.map(e => ({ ...e, old: true }));
   expenses = [...newTxns, ...expenses];
@@ -140,8 +195,9 @@ async function fetchInsights(newTxns, historyTxns) {
       body: JSON.stringify({ newTransactions: newTxns, historyTransactions: historyTxns })
     });
     const data = await res.json();
-    return data.insights;
-  } catch {
+    return data.insights || '⚠️ No insights returned.';
+  } catch (err) {
+    console.error('AI fetch error:', err);
     return '⚠️ Unable to fetch AI insights right now.';
   }
 }
@@ -160,7 +216,7 @@ function render() {
   `).join('');
 }
 
-// ── CATEGORY CHART (Chart.js) — uses canvas id="categoryChart"
+// ── CATEGORY CHART (Chart.js)
 function renderChart() {
   const canvas = document.getElementById('categoryChart');
   if (!canvas) return;
@@ -173,9 +229,7 @@ function renderChart() {
   const labels = Object.keys(categoryMap);
   const values = Object.values(categoryMap);
 
-  // Destroy old chart instance before creating a new one
   if (categoryChart) { categoryChart.destroy(); categoryChart = null; }
-
   if (!labels.length) return;
 
   categoryChart = new Chart(canvas, {
@@ -186,7 +240,8 @@ function renderChart() {
         label: 'Spend ($)',
         data: values,
         backgroundColor: [
-          '#4caf50','#2196f3','#ff9800','#e91e63','#9c27b0','#00bcd4','#ff5722'
+          '#4caf50','#2196f3','#ff9800','#e91e63',
+          '#9c27b0','#00bcd4','#ff5722','#607d8b','#795548'
         ],
         borderRadius: 6
       }]
@@ -195,17 +250,10 @@ function renderChart() {
       responsive: true,
       plugins: {
         legend: { display: false },
-        tooltip: {
-          callbacks: {
-            label: ctx => `$${ctx.parsed.y.toFixed(2)}`
-          }
-        }
+        tooltip: { callbacks: { label: ctx => `$${ctx.parsed.y.toFixed(2)}` } }
       },
       scales: {
-        y: {
-          beginAtZero: true,
-          ticks: { callback: v => `$${v}` }
-        }
+        y: { beginAtZero: true, ticks: { callback: v => `$${v}` } }
       }
     }
   });
