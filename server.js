@@ -1,66 +1,103 @@
-// server.js
-import express from 'express';
-import cors from 'cors';
+// server.js — Spendr backend
+import express    from 'express';
+import cors       from 'cors';
 import bodyParser from 'body-parser';
-import path from 'path';
+import path       from 'path';
 import { fileURLToPath } from 'url';
-import fetch from 'node-fetch';
+import fetch      from 'node-fetch';
 
 const app = express();
 app.use(cors());
 app.use(bodyParser.json({ limit: '10mb' }));
 
 const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+const __dirname  = path.dirname(__filename);
 
 app.use(express.static(path.join(__dirname, 'public')));
 
-// ── AI Insights endpoint — MUST be before the SPA catch-all
+// ── AI INSIGHTS ENDPOINT ─────────────────────────────────────
+// Accepts:
+//   newTransactions     — current batch
+//   historyTransactions — previous batches
+//   chatHistory         — [{role, content}] for conversational follow-ups
+
 app.post('/ai-insights', async (req, res) => {
   try {
-    const { newTransactions, historyTransactions } = req.body;
+    const { newTransactions = [], historyTransactions = [], chatHistory = [] } = req.body;
 
-    const prompt = `You are a personal finance assistant. Analyse these Australian bank transactions and give practical insights.
+    // Build the system prompt that describes the AI's role
+    const systemPrompt =
+      'You are a friendly, practical personal finance assistant for an Australian user. ' +
+      'You analyse bank transactions and give clear, actionable insights. ' +
+      'Keep responses concise and well-structured. Use short paragraphs. ' +
+      'When mentioning dollar amounts, format them as $X.XX. ' +
+      'Do not repeat yourself. Avoid filler phrases like "Great question!".';
 
-New Transactions:
-${JSON.stringify(newTransactions, null, 2)}
+    // Build context about the data (injected only on first message)
+    let messages = [];
 
-Historical Transactions (previous uploads):
-${JSON.stringify(historyTransactions?.slice(0, 50), null, 2)}
+    if (chatHistory.length > 0) {
+      // Follow-up conversation — use the existing history directly
+      messages = chatHistory;
+    } else {
+      // First call — build context from transaction data
+      const totals = {};
+      newTransactions.forEach(t => {
+        totals[t.cat] = (totals[t.cat] || 0) + t.amount;
+      });
 
-Please provide:
-1. A brief summary of this week's spending by category.
-2. Any patterns or notable items worth flagging.
-3. One or two practical tips to reduce spend based on what you see.
+      const sorted = Object.entries(totals).sort((a, b) => b[1] - a[1]);
+      const grandTotal = newTransactions.reduce((s, t) => s + t.amount, 0);
 
-Keep your response concise and friendly. Do not show working or calculations — just write the final summary.`;
+      let contextBlock = `Total spend: $${grandTotal.toFixed(2)}\nTransactions: ${newTransactions.length}\n\nBy category:\n`;
+      sorted.forEach(([cat, amt]) => {
+        const pct = Math.round(amt / grandTotal * 100);
+        contextBlock += `  ${cat}: $${amt.toFixed(2)} (${pct}%)\n`;
+      });
 
+      contextBlock += '\nTop transactions:\n';
+      newTransactions.slice(0, 20).forEach(t => {
+        contextBlock += `  ${t.cat} | $${t.amount.toFixed(2)} | ${t.note}\n`;
+      });
+
+      if (historyTransactions.length > 0) {
+        const histTotal = historyTransactions.reduce((s, t) => s + t.amount, 0);
+        contextBlock += `\nPrevious spending total on record: $${histTotal.toFixed(2)} across ${historyTransactions.length} transactions.`;
+      }
+
+      messages = [{
+        role:    'user',
+        content: `Here is my spending data:\n\n${contextBlock}\n\nPlease give me a clear summary with:\n1. Total and top categories\n2. Any patterns or flagged items\n3. One or two practical saving tips\n\nKeep it concise and readable.`
+      }];
+    }
+
+    // Call OpenRouter
     const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
-      method: 'POST',
+      method:  'POST',
       headers: {
-        'Content-Type': 'application/json',
+        'Content-Type':  'application/json',
         'Authorization': `Bearer ${process.env.OPENROUTER_API_KEY}`,
-        'HTTP-Referer': 'https://spendr-app.onrender.com',
-        'X-Title': 'Spendr Expense Tracker'
+        'HTTP-Referer':  'https://spendr-app.onrender.com',
+        'X-Title':       'Spendr Expense Tracker',
       },
       body: JSON.stringify({
-        model: 'openrouter/free',
-        messages: [{ role: 'user', content: prompt }],
-        max_tokens: 1024  // increased so reasoning models don't run out before writing output
-      })
+        model:    'openrouter/auto',   // auto picks best available free model
+        messages: [
+          { role: 'system', content: systemPrompt },
+          ...messages,
+        ],
+        max_tokens: 1024,
+      }),
     });
 
     const data = await response.json();
-    console.log('OpenRouter response model:', data.model, '| finish_reason:', data.choices?.[0]?.finish_reason);
 
     if (data.error) {
       console.error('OpenRouter error:', data.error);
       return res.json({ insights: `⚠️ AI error: ${data.error.message}` });
     }
 
-    const message = data.choices?.[0]?.message;
-
-    // Some free models (e.g. reasoning models) put output in `reasoning` instead of `content`
+    const message  = data.choices?.[0]?.message;
     const insights =
       message?.content ||
       message?.reasoning ||
@@ -68,21 +105,23 @@ Keep your response concise and friendly. Do not show working or calculations —
       null;
 
     if (!insights) {
-      console.error('No content in response:', JSON.stringify(data, null, 2));
+      console.error('No content in OpenRouter response:', JSON.stringify(data, null, 2));
       return res.json({ insights: '⚠️ The AI did not return a response. Try again in a moment.' });
     }
 
+    console.log(`[AI] model=${data.model} | finish=${data.choices?.[0]?.finish_reason} | chars=${insights.length}`);
     res.json({ insights });
+
   } catch (err) {
     console.error('AI Insights error:', err);
     res.json({ insights: `⚠️ Server error: ${err.message}` });
   }
 });
 
-// ── SPA fallback — MUST be last
+// ── SPA FALLBACK ─────────────────────────────────────────────
 app.get(/.*/, (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => console.log(`✅ Server running on http://localhost:${PORT}`));
+app.listen(PORT, () => console.log(`✅ Spendr running on http://localhost:${PORT}`));
