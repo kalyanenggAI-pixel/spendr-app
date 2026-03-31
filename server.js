@@ -50,7 +50,7 @@ Provide:
         'Authorization': `Bearer ${process.env.OPENROUTER_API_KEY}`
       },
       body: JSON.stringify({
-        model: 'mistral-instruct-v0.1',
+        model: "openrouter/free",
         messages: [{ role: 'user', content: prompt }]
       })
     });
