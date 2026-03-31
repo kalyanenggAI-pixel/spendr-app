@@ -33,7 +33,7 @@ Please provide:
 2. Any patterns or notable items worth flagging.
 3. One or two practical tips to reduce spend based on what you see.
 
-Keep your response concise and friendly.`;
+Keep your response concise and friendly. Do not show working or calculations — just write the final summary.`;
 
     const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
       method: 'POST',
@@ -46,29 +46,30 @@ Keep your response concise and friendly.`;
       body: JSON.stringify({
         model: 'openrouter/free',
         messages: [{ role: 'user', content: prompt }],
-        max_tokens: 500
+        max_tokens: 1024  // increased so reasoning models don't run out before writing output
       })
     });
 
     const data = await response.json();
-
-    // Log the full response so we can see exactly what came back
-    console.log('OpenRouter full response:', JSON.stringify(data, null, 2));
+    console.log('OpenRouter response model:', data.model, '| finish_reason:', data.choices?.[0]?.finish_reason);
 
     if (data.error) {
       console.error('OpenRouter error:', data.error);
       return res.json({ insights: `⚠️ AI error: ${data.error.message}` });
     }
 
-    // Handle both possible response shapes
+    const message = data.choices?.[0]?.message;
+
+    // Some free models (e.g. reasoning models) put output in `reasoning` instead of `content`
     const insights =
-      data.choices?.[0]?.message?.content ||
-      data.choices?.[0]?.text ||
+      message?.content ||
+      message?.reasoning ||
+      message?.reasoning_details?.[0]?.text ||
       null;
 
     if (!insights) {
-      // Return the raw response so we can debug from the UI
-      return res.json({ insights: `⚠️ Unexpected response shape:\n${JSON.stringify(data, null, 2)}` });
+      console.error('No content in response:', JSON.stringify(data, null, 2));
+      return res.json({ insights: '⚠️ The AI did not return a response. Try again in a moment.' });
     }
 
     res.json({ insights });
