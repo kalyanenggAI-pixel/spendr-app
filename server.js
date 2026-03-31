@@ -8,31 +8,21 @@ import fetch from 'node-fetch';
 
 const app = express();
 
-// Allow cross-origin requests
 app.use(cors());
-
-// Increase JSON payload limit
 app.use(bodyParser.json({ limit: '10mb' }));
 
-// Fix __dirname in ES module
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-// ── Serve frontend ────────────────────────────
 app.use(express.static(path.join(__dirname, 'public')));
 
-// SPA fallback route
-app.get(/.*/, (req, res) => {
-  res.sendFile(path.join(__dirname, 'public', 'index.html'));
-});
-
-// ── AI Insights endpoint ───────────────────────
+// ── AI Insights endpoint ── MUST be before the SPA catch-all
 app.post('/ai-insights', async (req, res) => {
   try {
     const { newTransactions, historyTransactions } = req.body;
 
     const prompt = `
-Analyze these transactions and give insights. 
+Analyze these transactions and give insights.
 
 New Transactions: ${JSON.stringify(newTransactions)}
 Historical Transactions: ${JSON.stringify(historyTransactions)}
@@ -42,7 +32,6 @@ Provide:
 2. Advice based on historical spend.
 `;
 
-    // Call OpenRouter / free LLM
     const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
       method: 'POST',
       headers: {
@@ -65,6 +54,10 @@ Provide:
   }
 });
 
-// ── Start server ──────────────────────────────
+// ── SPA fallback — MUST be last
+app.get(/.*/, (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'index.html'));
+});
+
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => console.log(`✅ Server running on http://localhost:${PORT}`));

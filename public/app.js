@@ -4,6 +4,7 @@
 
 const STORAGE_KEY = 'spendr_expenses';
 let expenses = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
+let categoryChart = null; // Chart.js instance
 
 // ── INIT
 document.getElementById('btn-analyse').addEventListener('click', async () => {
@@ -12,7 +13,6 @@ document.getElementById('btn-analyse').addEventListener('click', async () => {
     setStatus('❌ Paste valid CSV data', 'error');
     return;
   }
-
   try {
     const rows = parseCSVUniversal(text);
     await processTransactionsUniversal(rows);
@@ -20,6 +20,15 @@ document.getElementById('btn-analyse').addEventListener('click', async () => {
     console.error(e);
     setStatus('❌ Error: ' + e.message, 'error');
   }
+});
+
+document.getElementById('btn-clear').addEventListener('click', () => {
+  expenses = [];
+  localStorage.removeItem(STORAGE_KEY);
+  render();
+  renderChart();
+  document.getElementById('ai-summary').style.display = 'none';
+  setStatus('🗑️ All transactions cleared', '');
 });
 
 // ── UNIVERSAL CSV PARSER
@@ -32,25 +41,16 @@ function parseCSVUniversal(text) {
   return lines.slice(dataStart).map(line => {
     const cols = splitCSVLine(line);
 
-    // Date
     const date = cols.find(c => /\d{2}\/\d{2}\/\d{4}/.test(c)) || '';
-
-    // Description
     const desc = cols[2] || '';
 
-    // Amount = first numeric after description
     let amount = 0;
     for (let i = 3; i < cols.length; i++) {
       const n = parseFloat(cols[i].replace(',', '.'));
-      if (!isNaN(n)) {
-        amount = n;
-        break;
-      }
+      if (!isNaN(n)) { amount = n; break; }
     }
 
-    // Type
     const type = cols.find(c => c && c.toLowerCase().includes('payment')) || '';
-
     return { date, desc, amount, type, old: false };
   });
 }
@@ -63,28 +63,23 @@ function splitCSVLine(line) {
 
   for (let char of line) {
     if (char === '"') inQuotes = !inQuotes;
-    else if (char === ',' && !inQuotes) {
-      result.push(current.trim());
-      current = '';
-    } else current += char;
+    else if (char === ',' && !inQuotes) { result.push(current.trim()); current = ''; }
+    else current += char;
   }
-
   result.push(current.trim());
   return result;
 }
 
 // ── EXPENSE DETECTION
-function isExpense(r) {
-  return r.amount > 0;
-}
+function isExpense(r) { return r.amount > 0; }
 
 // ── CLEAN DESCRIPTION
 function cleanDesc(desc) {
   return desc
     .toUpperCase()
     .replace(/EFT DEBIT|DEBIT CARD PURCHASE|PAYMENT BY AUTHORITY|PAYMENT/g, '')
-    .replace(/\d{6,}/g, '')        // long IDs
-    .replace(/\d{2}\/\d{2}/g, '')  // dates like 09/01
+    .replace(/\d{6,}/g, '')
+    .replace(/\d{2}\/\d{2}/g, '')
     .replace(/\s+/g, ' ')
     .trim();
 }
@@ -93,11 +88,11 @@ function cleanDesc(desc) {
 function categorize(desc) {
   const d = desc.toLowerCase();
   if (d.includes('transfer') || d.includes('osko') || d.includes('payid')) return 'Transfers';
-  if (d.includes('electricity') || d.includes('water') || d.includes('energy') || d.includes('telstra') || d.includes('optus')) return 'Bills & utilities';
+  if (d.includes('electricity') || d.includes('water') || d.includes('energy') || d.includes('telstra') || d.includes('optus')) return 'Bills & Utilities';
   if (d.includes('coles') || d.includes('woolworths') || d.includes('aldi')) return 'Groceries';
   if (d.includes('bunnings')) return 'Home';
   if (d.includes('uber') || d.includes('taxi') || d.includes('fuel')) return 'Transport';
-  if (d.includes('cafe') || d.includes('restaurant') || d.includes('takeaway')) return 'Food & dining';
+  if (d.includes('cafe') || d.includes('restaurant') || d.includes('takeaway')) return 'Food & Dining';
   return 'Shopping';
 }
 
@@ -119,24 +114,25 @@ async function processTransactionsUniversal(rows) {
       };
     });
 
-  // Mark all existing expenses as old (for historical advice)
   expenses = expenses.map(e => ({ ...e, old: true }));
   expenses = [...newTxns, ...expenses];
-
   localStorage.setItem(STORAGE_KEY, JSON.stringify(expenses));
+
   render();
   renderChart();
 
-  // AI Insights
+  setStatus(`✅ Added ${newTxns.length} transactions — fetching AI insights...`, 'success');
+
   const insights = await fetchInsights(newTxns, expenses.filter(e => e.old));
-  document.getElementById('ai-summary').textContent = insights;
-  document.getElementById('ai-summary').classList.remove('hidden');
+  const summaryEl = document.getElementById('ai-summary');
+  summaryEl.textContent = insights;
+  summaryEl.style.display = 'block';
 
   setStatus(`✅ Added ${newTxns.length} transactions`, 'success');
 }
 
 // ── FETCH AI INSIGHTS
-async function fetchInsights(newTxns, historyTxns){
+async function fetchInsights(newTxns, historyTxns) {
   try {
     const res = await fetch('https://spendr-app.onrender.com/ai-insights', {
       method: 'POST',
@@ -150,44 +146,73 @@ async function fetchInsights(newTxns, historyTxns){
   }
 }
 
-// ── EXTRACT MERCHANT
-function extractMerchant(desc) {
-  const words = cleanDesc(desc).split(' ').filter(w => w.length > 2);
-  return words.slice(0,3).join(' ');
-}
-
 // ── UI RENDERING
 function render() {
   const list = document.getElementById('expense-list');
-  if (!expenses.length) { list.innerHTML = '<div>No transactions yet</div>'; return; }
+  const current = expenses.filter(e => !e.old);
+  if (!current.length) { list.innerHTML = '<div>No transactions yet</div>'; return; }
 
-  list.innerHTML = expenses.filter(e => !e.old).map(e => `
+  list.innerHTML = current.map(e => `
     <div class="txn">
-      <strong>${e.cat}</strong> - $${e.amount.toFixed(2)} <br/>
+      <strong>${e.cat}</strong> — $${e.amount.toFixed(2)}<br/>
       <small>${e.note}</small>
     </div>
   `).join('');
 }
 
-// ── CATEGORY BAR CHART
+// ── CATEGORY CHART (Chart.js) — uses canvas id="categoryChart"
 function renderChart() {
-  const chart = document.getElementById('bar-chart');
-  if (!chart) return;
+  const canvas = document.getElementById('categoryChart');
+  if (!canvas) return;
+
   const categoryMap = {};
   expenses.filter(e => !e.old).forEach(e => {
     categoryMap[e.cat] = (categoryMap[e.cat] || 0) + e.amount;
   });
 
-  chart.innerHTML = Object.entries(categoryMap).map(([cat, amt]) => `
-    <div style="margin-bottom:5px;">
-      <strong>${cat}</strong>: $${amt.toFixed(2)}
-      <div style="background:#4caf50; height:20px; width:${Math.min(amt,500)}px;"></div>
-    </div>
-  `).join('');
+  const labels = Object.keys(categoryMap);
+  const values = Object.values(categoryMap);
+
+  // Destroy old chart instance before creating a new one
+  if (categoryChart) { categoryChart.destroy(); categoryChart = null; }
+
+  if (!labels.length) return;
+
+  categoryChart = new Chart(canvas, {
+    type: 'bar',
+    data: {
+      labels,
+      datasets: [{
+        label: 'Spend ($)',
+        data: values,
+        backgroundColor: [
+          '#4caf50','#2196f3','#ff9800','#e91e63','#9c27b0','#00bcd4','#ff5722'
+        ],
+        borderRadius: 6
+      }]
+    },
+    options: {
+      responsive: true,
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          callbacks: {
+            label: ctx => `$${ctx.parsed.y.toFixed(2)}`
+          }
+        }
+      },
+      scales: {
+        y: {
+          beginAtZero: true,
+          ticks: { callback: v => `$${v}` }
+        }
+      }
+    }
+  });
 }
 
 // ── STATUS MESSAGE
-function setStatus(msg, type='') {
+function setStatus(msg, type = '') {
   const el = document.getElementById('upload-status');
   el.innerText = msg;
   el.className = type;
