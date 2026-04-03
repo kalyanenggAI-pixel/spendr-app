@@ -118,6 +118,23 @@ app.post('/ai-insights', async (req, res) => {
   }
 });
 
+// ── Register ─────────────────────────────────────────────
+
+app.post('/register', (req, res) => {
+  const { email, password } = req.body;
+
+  console.log("Register attempt:", email);
+
+  if (!email || !password) {
+    return res.status(400).json({ message: "Missing fields" });
+  }
+
+  // TEMP: just simulate success (no DB yet)
+  return res.json({
+    message: "User registered successfully"
+  });
+});
+
 // ── SPA FALLBACK ─────────────────────────────────────────────
 app.get(/.*/, (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'landing.html'));

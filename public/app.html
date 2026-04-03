@@ -672,6 +672,24 @@
   </div>
 </footer>
 
+<script>
+  // 👇 AUTH CHECK HERE
+  const currentUser = localStorage.getItem('spendr_current_user');
+
+  if (!currentUser) {
+    window.location.href = "landing.html";
+  } else {
+    document.addEventListener("DOMContentLoaded", () => {
+      document.getElementById("app").style.display = "block";
+
+      const userData = JSON.parse(localStorage.getItem('spendr_user_' + currentUser));
+      if (userData && userData.name) {
+        document.getElementById("header-user").innerText = "Hi, " + userData.name;
+      }
+    });
+  }
+</script>
+
 <script src="app.js"></script>
 </body>
 </html>

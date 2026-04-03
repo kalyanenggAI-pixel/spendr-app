@@ -82,7 +82,11 @@ function doRegister() {
   if (pass.length < 6)          return showAuthError('Password must be at least 6 characters.');
   if (localStorage.getItem('spendr_user_' + email)) return showAuthError('Account already exists. Sign in instead.');
   localStorage.setItem('spendr_user_' + email, JSON.stringify({ name, email, password: btoa(pass), plan }));
-  loginSuccess({ name, email, plan });
+   // Optional: store current logged-in user
+  localStorage.setItem('spendr_current_user', email);
+
+ // ✅ Redirect to main app
+  window.location.href = "app.html";
 }
 
 function loginSuccess(user) {
