@@ -1458,6 +1458,7 @@
     if (user.password !== btoa(pass)) return showAuthError('Incorrect password. Please try again.');
     // Save session and redirect to app
     localStorage.setItem('spendr_session', JSON.stringify({ name: user.name, email: user.email, plan: user.plan }));
+    localStorage.setItem('spendr_current_user', email)
     window.location.href = "app.html";
   }
 
@@ -1472,6 +1473,7 @@
     if (localStorage.getItem('spendr_user_' + email)) return showAuthError('An account with this email already exists.');
     localStorage.setItem('spendr_user_' + email, JSON.stringify({ name, email, password: btoa(pass), plan }));
     localStorage.setItem('spendr_session', JSON.stringify({ name, email, plan }));
+    localStorage.setItem('spendr_current_user', email)
     window.location.href = "app.html";
   }
 
