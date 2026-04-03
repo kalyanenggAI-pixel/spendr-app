@@ -120,7 +120,7 @@ app.post('/ai-insights', async (req, res) => {
 
 // ── SPA FALLBACK ─────────────────────────────────────────────
 app.get(/.*/, (req, res) => {
-  res.sendFile(path.join(__dirname, 'public', 'index.html'));
+  res.sendFile(path.join(__dirname, 'public', 'landing.html'));
 });
 
 const PORT = process.env.PORT || 3000;
