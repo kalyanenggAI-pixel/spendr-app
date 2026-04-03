@@ -82,23 +82,21 @@ function doRegister() {
   if (pass.length < 6)          return showAuthError('Password must be at least 6 characters.');
   if (localStorage.getItem('spendr_user_' + email)) return showAuthError('Account already exists. Sign in instead.');
   localStorage.setItem('spendr_user_' + email, JSON.stringify({ name, email, password: btoa(pass), plan }));
-   // Optional: store current logged-in user
-  localStorage.setItem('spendr_current_user', email);
-
- // ✅ Redirect to main app
-  window.location.href = "app.html";
+  loginSuccess({ name, email, plan });
 }
 
 function loginSuccess(user) {
   currentUser = user;
   localStorage.setItem('spendr_session', JSON.stringify(user));
   loadState();
-  document.getElementById('auth-screen').style.display = 'none';
-  document.getElementById('app').style.display = 'block';
-  document.getElementById('header-user').textContent = user.name.split(' ')[0];
+  const authScreen = document.getElementById('auth-screen');
+  if (authScreen) authScreen.style.display = 'none';
+  const appEl = document.getElementById('app');
+  if (appEl) appEl.style.display = 'block';
+  const headerUser = document.getElementById('header-user');
+  if (headerUser) headerUser.textContent = user.name.split(' ')[0];
   const planEl = document.getElementById('header-plan');
-  planEl.textContent = user.plan.toUpperCase();
-  planEl.className = 'header-plan' + (user.plan === 'pro' ? ' pro' : '');
+  if (planEl) { planEl.textContent = user.plan.toUpperCase(); planEl.className = 'header-plan' + (user.plan === 'pro' ? ' pro' : ''); }
   renderAll();
   applyProLocks();
 }
@@ -106,9 +104,15 @@ function loginSuccess(user) {
 function doLogout() {
   if (!confirm('Sign out?')) return;
   localStorage.removeItem('spendr_session');
+  localStorage.removeItem('spendr_current_user');
   currentUser = null; expenses = []; budgets = {}; chatHistory = []; currentTxns = [];
-  document.getElementById('app').style.display = 'none';
-  document.getElementById('auth-screen').style.display = 'flex';
+  const authScreen = document.getElementById('auth-screen');
+  if (authScreen) {
+    document.getElementById('app').style.display = 'none';
+    authScreen.style.display = 'flex';
+  } else {
+    window.location.href = 'landing.html';
+  }
 }
 
 // Check existing session
