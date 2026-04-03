@@ -1,0 +1,1484 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>$PEND-R₹ — Friend in Spend</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Outfit:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@300;400;500&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --red:       #e82020;
+      --red-dark:  #b81818;
+      --red-glow:  rgba(232,32,32,0.35);
+      --ink:       #0a0a0a;
+      --ink-2:     #111111;
+      --ink-3:     #1a1a1a;
+      --white:     #ffffff;
+      --off:       #f5f5f0;
+      --muted:     rgba(255,255,255,0.45);
+      --border:    rgba(255,255,255,0.08);
+      --border-l:  rgba(0,0,0,0.1);
+      --font:      'Outfit', sans-serif;
+      --display:   'Bebas Neue', sans-serif;
+      --mono:      'JetBrains Mono', monospace;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { scroll-behavior: smooth; }
+
+    body {
+      background: var(--ink);
+      color: var(--white);
+      font-family: var(--font);
+      overflow-x: hidden;
+      cursor: default;
+    }
+
+    /* ── NOISE GRAIN OVERLAY ── */
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.04'/%3E%3C/svg%3E");
+      pointer-events: none;
+      z-index: 9999;
+      opacity: 0.4;
+    }
+
+    /* ── SCROLLBAR ── */
+    ::-webkit-scrollbar { width: 3px; }
+    ::-webkit-scrollbar-track { background: var(--ink); }
+    ::-webkit-scrollbar-thumb { background: var(--red); border-radius: 3px; }
+
+    /* ════════════════════════════════════
+       NAV
+    ════════════════════════════════════ */
+    nav {
+      position: fixed;
+      top: 0; left: 0; right: 0;
+      z-index: 100;
+      padding: 0 3rem;
+      height: 72px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      transition: background 0.4s, backdrop-filter 0.4s, border-bottom 0.4s;
+    }
+    nav.scrolled {
+      background: rgba(10,10,10,0.9);
+      backdrop-filter: blur(20px);
+      border-bottom: 1px solid var(--border);
+    }
+
+    .nav-logo {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      text-decoration: none;
+    }
+    .nav-logo img { height: 34px; border-radius: 7px; }
+    .nav-logo-text {
+      font-family: var(--display);
+      font-size: 26px;
+      letter-spacing: 0.04em;
+      color: var(--white);
+      line-height: 1;
+    }
+    .nav-logo-text span { color: var(--red); }
+
+    .nav-links {
+      display: flex;
+      align-items: center;
+      gap: 2rem;
+      list-style: none;
+    }
+    .nav-links a {
+      color: var(--muted);
+      text-decoration: none;
+      font-size: 13px;
+      font-weight: 500;
+      letter-spacing: 0.04em;
+      transition: color 0.2s;
+    }
+    .nav-links a:hover { color: var(--white); }
+
+    .nav-cta {
+      background: var(--red);
+      color: white !important;
+      padding: 9px 22px;
+      border-radius: 100px;
+      font-weight: 600 !important;
+      letter-spacing: 0.02em !important;
+      transition: all 0.2s !important;
+      box-shadow: 0 0 20px var(--red-glow);
+    }
+    .nav-cta:hover {
+      background: var(--red-dark) !important;
+      transform: translateY(-1px);
+      box-shadow: 0 4px 30px var(--red-glow) !important;
+    }
+
+    .nav-mobile-btn { display: none; background: none; border: none; cursor: pointer; flex-direction: column; gap: 5px; }
+    .nav-mobile-btn span { display: block; width: 22px; height: 1.5px; background: white; transition: all 0.3s; }
+
+    /* ════════════════════════════════════
+       HERO
+    ════════════════════════════════════ */
+    #home {
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+      padding: 8rem 2rem 4rem;
+      text-align: center;
+      overflow: hidden;
+    }
+
+    /* Animated background grid */
+    .hero-grid {
+      position: absolute;
+      inset: 0;
+      background-image:
+        linear-gradient(rgba(232,32,32,0.04) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(232,32,32,0.04) 1px, transparent 1px);
+      background-size: 60px 60px;
+      animation: gridScroll 20s linear infinite;
+      mask-image: radial-gradient(ellipse 80% 60% at 50% 50%, black 40%, transparent 100%);
+    }
+    @keyframes gridScroll { from { transform: translateY(0); } to { transform: translateY(60px); } }
+
+    /* Glowing orbs */
+    .hero-orb {
+      position: absolute;
+      border-radius: 50%;
+      filter: blur(80px);
+      pointer-events: none;
+    }
+    .hero-orb-1 {
+      width: 600px; height: 600px;
+      background: radial-gradient(circle, rgba(232,32,32,0.15), transparent 70%);
+      top: -100px; left: 50%;
+      transform: translateX(-50%);
+      animation: orbPulse 6s ease-in-out infinite;
+    }
+    .hero-orb-2 {
+      width: 400px; height: 400px;
+      background: radial-gradient(circle, rgba(232,32,32,0.08), transparent 70%);
+      bottom: 0; right: -100px;
+      animation: orbPulse 8s ease-in-out infinite reverse;
+    }
+    @keyframes orbPulse { 0%,100%{opacity:0.6;transform:scale(1) translateX(-50%)} 50%{opacity:1;transform:scale(1.1) translateX(-50%)} }
+
+    .hero-eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: rgba(232,32,32,0.1);
+      border: 1px solid rgba(232,32,32,0.3);
+      border-radius: 100px;
+      padding: 6px 16px;
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--red);
+      margin-bottom: 2rem;
+      animation: fadeUp 0.6s ease both;
+    }
+    .hero-eyebrow::before { content: ''; width: 6px; height: 6px; background: var(--red); border-radius: 50%; animation: pulse 2s infinite; }
+    @keyframes pulse { 0%,100%{box-shadow:0 0 0 0 rgba(232,32,32,0.4)} 50%{box-shadow:0 0 0 6px rgba(232,32,32,0)} }
+
+    .hero-title {
+      font-family: var(--display);
+      font-size: clamp(72px, 12vw, 180px);
+      line-height: 0.88;
+      letter-spacing: 0.02em;
+      margin-bottom: 0.5rem;
+      animation: fadeUp 0.6s 0.1s ease both;
+      position: relative;
+    }
+    .hero-title .line-red { color: var(--red); display: block; }
+    .hero-title .line-white { color: var(--white); display: block; }
+
+    .hero-subtitle {
+      font-size: clamp(15px, 2vw, 20px);
+      color: var(--muted);
+      max-width: 520px;
+      line-height: 1.65;
+      margin: 1.5rem auto 2.5rem;
+      font-weight: 400;
+      animation: fadeUp 0.6s 0.2s ease both;
+    }
+
+    .hero-actions {
+      display: flex;
+      gap: 14px;
+      justify-content: center;
+      flex-wrap: wrap;
+      animation: fadeUp 0.6s 0.3s ease both;
+    }
+
+    .btn-hero-primary {
+      background: var(--red);
+      color: white;
+      border: none;
+      border-radius: 100px;
+      padding: 16px 36px;
+      font-family: var(--font);
+      font-size: 15px;
+      font-weight: 700;
+      letter-spacing: 0.02em;
+      cursor: pointer;
+      text-decoration: none;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      box-shadow: 0 0 40px var(--red-glow);
+      transition: all 0.25s;
+    }
+    .btn-hero-primary:hover {
+      background: #ff2a2a;
+      transform: translateY(-2px);
+      box-shadow: 0 8px 50px var(--red-glow);
+    }
+    .btn-hero-primary svg { width: 16px; height: 16px; transition: transform 0.2s; }
+    .btn-hero-primary:hover svg { transform: translateX(3px); }
+
+    .btn-hero-ghost {
+      background: transparent;
+      color: var(--muted);
+      border: 1px solid rgba(255,255,255,0.15);
+      border-radius: 100px;
+      padding: 16px 36px;
+      font-family: var(--font);
+      font-size: 15px;
+      font-weight: 500;
+      cursor: pointer;
+      text-decoration: none;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      transition: all 0.25s;
+    }
+    .btn-hero-ghost:hover { border-color: rgba(255,255,255,0.4); color: var(--white); }
+
+    /* Floating stats */
+    .hero-stats {
+      display: flex;
+      gap: 3rem;
+      justify-content: center;
+      margin-top: 5rem;
+      padding-top: 3rem;
+      border-top: 1px solid var(--border);
+      animation: fadeUp 0.6s 0.5s ease both;
+    }
+    .hero-stat-val {
+      font-family: var(--display);
+      font-size: 42px;
+      letter-spacing: 0.02em;
+      color: var(--white);
+      line-height: 1;
+    }
+    .hero-stat-val span { color: var(--red); }
+    .hero-stat-label { font-size: 11px; color: var(--muted); letter-spacing: 0.08em; text-transform: uppercase; margin-top: 4px; }
+
+    /* Scroll indicator */
+    .scroll-hint {
+      position: absolute;
+      bottom: 2rem;
+      left: 50%;
+      transform: translateX(-50%);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 6px;
+      color: var(--muted);
+      font-size: 10px;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      animation: fadeIn 1s 1s ease both;
+    }
+    .scroll-mouse {
+      width: 20px; height: 30px;
+      border: 1.5px solid rgba(255,255,255,0.2);
+      border-radius: 10px;
+      display: flex;
+      justify-content: center;
+      padding-top: 5px;
+    }
+    .scroll-mouse::after {
+      content: '';
+      width: 3px; height: 5px;
+      background: var(--red);
+      border-radius: 2px;
+      animation: scrollDot 2s infinite;
+    }
+    @keyframes scrollDot { 0%{opacity:1;transform:translateY(0)} 100%{opacity:0;transform:translateY(8px)} }
+
+    /* ════════════════════════════════════
+       TICKER TAPE
+    ════════════════════════════════════ */
+    .ticker {
+      background: var(--red);
+      padding: 12px 0;
+      overflow: hidden;
+      white-space: nowrap;
+    }
+    .ticker-inner {
+      display: inline-flex;
+      gap: 0;
+      animation: ticker 30s linear infinite;
+    }
+    .ticker-item {
+      display: inline-flex;
+      align-items: center;
+      gap: 12px;
+      padding: 0 2rem;
+      font-family: var(--display);
+      font-size: 14px;
+      letter-spacing: 0.08em;
+      color: rgba(255,255,255,0.85);
+    }
+    .ticker-dot { width: 4px; height: 4px; background: rgba(255,255,255,0.4); border-radius: 50%; }
+    @keyframes ticker { from{transform:translateX(0)} to{transform:translateX(-50%)} }
+
+    /* ════════════════════════════════════
+       SECTION BASE
+    ════════════════════════════════════ */
+    section { padding: 8rem 3rem; }
+    .section-inner { max-width: 1200px; margin: 0 auto; }
+
+    .section-tag {
+      font-family: var(--mono);
+      font-size: 10px;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: var(--red);
+      margin-bottom: 1rem;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .section-tag::after { content: ''; flex: 1; max-width: 60px; height: 1px; background: var(--red); opacity: 0.5; }
+
+    .section-heading {
+      font-family: var(--display);
+      font-size: clamp(48px, 7vw, 88px);
+      line-height: 0.92;
+      letter-spacing: 0.02em;
+      margin-bottom: 1.5rem;
+    }
+    .section-heading .accent { color: var(--red); }
+
+    .section-body {
+      font-size: 17px;
+      color: var(--muted);
+      max-width: 560px;
+      line-height: 1.7;
+    }
+
+    /* ════════════════════════════════════
+       FEATURES
+    ════════════════════════════════════ */
+    #features { background: var(--ink-2); }
+
+    .features-header {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 4rem;
+      align-items: end;
+      margin-bottom: 5rem;
+    }
+
+    .features-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 1.5px;
+      background: var(--border);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      overflow: hidden;
+    }
+
+    .feat-card {
+      background: var(--ink-2);
+      padding: 2rem;
+      transition: background 0.3s;
+      position: relative;
+      overflow: hidden;
+    }
+    .feat-card::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 2px;
+      background: linear-gradient(90deg, transparent, var(--red), transparent);
+      opacity: 0;
+      transition: opacity 0.3s;
+    }
+    .feat-card:hover { background: var(--ink-3); }
+    .feat-card:hover::before { opacity: 1; }
+
+    .feat-icon {
+      width: 44px; height: 44px;
+      background: rgba(232,32,32,0.1);
+      border: 1px solid rgba(232,32,32,0.2);
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 20px;
+      margin-bottom: 1.25rem;
+    }
+    .feat-title {
+      font-size: 16px;
+      font-weight: 700;
+      margin-bottom: 8px;
+      color: var(--white);
+    }
+    .feat-desc {
+      font-size: 13px;
+      color: var(--muted);
+      line-height: 1.65;
+    }
+    .feat-tag {
+      display: inline-block;
+      margin-top: 10px;
+      font-size: 9px;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      padding: 3px 8px;
+      border-radius: 4px;
+      background: rgba(217,119,6,0.15);
+      color: #f59e0b;
+      border: 1px solid rgba(217,119,6,0.2);
+    }
+
+    /* ════════════════════════════════════
+       VISUAL MOCKUP STRIP
+    ════════════════════════════════════ */
+    .dashboard-preview {
+      background: var(--ink-3);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      overflow: hidden;
+      margin-top: 5rem;
+      position: relative;
+    }
+    .preview-bar {
+      background: rgba(255,255,255,0.03);
+      border-bottom: 1px solid var(--border);
+      padding: 12px 20px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .preview-dot { width: 10px; height: 10px; border-radius: 50%; }
+    .preview-dot:nth-child(1) { background: #ff5f57; }
+    .preview-dot:nth-child(2) { background: #febc2e; }
+    .preview-dot:nth-child(3) { background: #28c840; }
+    .preview-url {
+      flex: 1; text-align: center;
+      font-family: var(--mono);
+      font-size: 11px;
+      color: rgba(255,255,255,0.25);
+    }
+    .preview-body { padding: 2rem; display: grid; grid-template-columns: 280px 1fr; gap: 1.5rem; }
+    .preview-left { display: flex; flex-direction: column; gap: 1rem; }
+
+    /* Animated stat cards */
+    .prev-stat {
+      background: rgba(232,32,32,0.08);
+      border: 1px solid rgba(232,32,32,0.15);
+      border-radius: 12px;
+      padding: 1rem;
+    }
+    .prev-stat-label { font-size: 9px; color: var(--muted); letter-spacing: 0.1em; text-transform: uppercase; font-family: var(--mono); }
+    .prev-stat-val { font-family: var(--display); font-size: 32px; color: var(--white); margin-top: 2px; }
+    .prev-chart-card {
+      background: rgba(255,255,255,0.03);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 1rem;
+      flex: 1;
+    }
+    .prev-chart-title { font-size: 9px; color: var(--muted); letter-spacing: 0.1em; text-transform: uppercase; font-family: var(--mono); margin-bottom: 12px; }
+    .prev-bar-row { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
+    .prev-bar-label { font-size: 10px; color: var(--muted); width: 70px; flex-shrink: 0; }
+    .prev-bar-track { flex: 1; height: 6px; background: rgba(255,255,255,0.06); border-radius: 99px; overflow: hidden; }
+    .prev-bar-fill { height: 100%; border-radius: 99px; animation: barGrow 1.5s ease both; }
+    @keyframes barGrow { from{width:0} }
+    .prev-bar-val { font-size: 10px; color: var(--muted); font-family: var(--mono); width: 45px; text-align: right; flex-shrink: 0; }
+
+    .prev-chat {
+      background: rgba(255,255,255,0.03);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+    }
+    .prev-chat-header { background: var(--red); padding: 10px 14px; font-size: 12px; font-weight: 600; display: flex; align-items: center; gap: 8px; }
+    .prev-chat-dot { width: 6px; height: 6px; background: #4ade80; border-radius: 50%; }
+    .prev-chat-body { padding: 1rem; display: flex; flex-direction: column; gap: 10px; flex: 1; }
+    .prev-msg { display: flex; gap: 8px; align-items: flex-start; }
+    .prev-msg-avatar { width: 22px; height: 22px; border-radius: 50%; background: var(--red); display: flex; align-items: center; justify-content: center; font-size: 8px; font-weight: 700; flex-shrink: 0; }
+    .prev-msg-bubble { background: rgba(255,255,255,0.05); border-radius: 10px; padding: 8px 10px; font-size: 11px; color: rgba(255,255,255,0.7); line-height: 1.5; max-width: 85%; }
+    .prev-msg.user { flex-direction: row-reverse; }
+    .prev-msg.user .prev-msg-avatar { background: rgba(255,255,255,0.1); }
+    .prev-msg.user .prev-msg-bubble { background: rgba(232,32,32,0.15); }
+
+    /* ════════════════════════════════════
+       PRICING
+    ════════════════════════════════════ */
+    #pricing { background: var(--ink); }
+
+    .pricing-header { text-align: center; margin-bottom: 4rem; }
+    .pricing-header .section-tag { justify-content: center; }
+    .pricing-header .section-tag::after { display: none; }
+    .pricing-header .section-body { margin: 0 auto; text-align: center; }
+
+    .pricing-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1.5rem;
+      max-width: 820px;
+      margin: 0 auto;
+    }
+
+    .plan-card {
+      border-radius: 24px;
+      padding: 2.5rem;
+      position: relative;
+      overflow: hidden;
+      transition: transform 0.3s;
+    }
+    .plan-card:hover { transform: translateY(-4px); }
+
+    .plan-free {
+      background: var(--ink-3);
+      border: 1px solid var(--border);
+    }
+    .plan-pro {
+      background: linear-gradient(135deg, #1a0808, #2a0a0a);
+      border: 1px solid rgba(232,32,32,0.4);
+      box-shadow: 0 0 60px rgba(232,32,32,0.1), inset 0 1px 0 rgba(255,255,255,0.05);
+    }
+    .plan-pro::before {
+      content: 'MOST POPULAR';
+      position: absolute;
+      top: 20px; right: 20px;
+      font-size: 9px;
+      font-weight: 700;
+      letter-spacing: 0.12em;
+      background: var(--red);
+      color: white;
+      padding: 4px 10px;
+      border-radius: 100px;
+    }
+
+    .plan-name { font-family: var(--display); font-size: 32px; letter-spacing: 0.05em; margin-bottom: 0.5rem; }
+    .plan-price {
+      font-family: var(--display);
+      font-size: 72px;
+      letter-spacing: -0.02em;
+      line-height: 1;
+      margin-bottom: 0.5rem;
+    }
+    .plan-price .currency { font-size: 28px; vertical-align: super; }
+    .plan-price .period { font-size: 18px; color: var(--muted); font-family: var(--font); font-weight: 400; }
+    .plan-tagline { font-size: 13px; color: var(--muted); margin-bottom: 2rem; }
+
+    .plan-divider { height: 1px; background: var(--border); margin-bottom: 1.5rem; }
+
+    .plan-features { display: flex; flex-direction: column; gap: 12px; margin-bottom: 2rem; }
+    .plan-feat {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      font-size: 14px;
+      color: rgba(255,255,255,0.75);
+    }
+    .plan-feat-icon { width: 18px; height: 18px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 10px; flex-shrink: 0; margin-top: 1px; }
+    .feat-yes { background: rgba(22,163,74,0.2); color: #4ade80; }
+    .feat-no  { background: rgba(255,255,255,0.05); color: rgba(255,255,255,0.2); }
+
+    .btn-plan-free {
+      display: block;
+      text-align: center;
+      background: transparent;
+      border: 1px solid rgba(255,255,255,0.2);
+      border-radius: 100px;
+      padding: 14px;
+      color: var(--white);
+      font-family: var(--font);
+      font-size: 14px;
+      font-weight: 600;
+      text-decoration: none;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .btn-plan-free:hover { border-color: rgba(255,255,255,0.5); }
+
+    .btn-plan-pro {
+      display: block;
+      text-align: center;
+      background: var(--red);
+      border: none;
+      border-radius: 100px;
+      padding: 14px;
+      color: white;
+      font-family: var(--font);
+      font-size: 14px;
+      font-weight: 700;
+      text-decoration: none;
+      cursor: pointer;
+      box-shadow: 0 4px 30px var(--red-glow);
+      transition: all 0.2s;
+    }
+    .btn-plan-pro:hover { background: #ff2a2a; transform: translateY(-1px); box-shadow: 0 8px 40px var(--red-glow); }
+
+    /* ════════════════════════════════════
+       COMPANY / ABOUT
+    ════════════════════════════════════ */
+    #company { background: var(--ink-2); }
+
+    .company-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 6rem;
+      align-items: center;
+    }
+
+    .company-text .section-body { margin-bottom: 2rem; }
+
+    .company-pillars {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1rem;
+    }
+    .pillar {
+      background: rgba(255,255,255,0.03);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 1.25rem;
+      transition: border-color 0.3s;
+    }
+    .pillar:hover { border-color: rgba(232,32,32,0.3); }
+    .pillar-icon { font-size: 22px; margin-bottom: 8px; }
+    .pillar-title { font-size: 14px; font-weight: 700; margin-bottom: 4px; }
+    .pillar-desc { font-size: 12px; color: var(--muted); line-height: 1.5; }
+
+    .company-visual {
+      position: relative;
+    }
+    .company-card-stack {
+      position: relative;
+      height: 420px;
+    }
+    .cc { /* company card */
+      position: absolute;
+      border-radius: 20px;
+      padding: 2rem;
+    }
+    .cc-1 {
+      background: linear-gradient(135deg, #1c1c1c, #2a2a2a);
+      border: 1px solid rgba(255,255,255,0.08);
+      width: 300px; height: 180px;
+      top: 0; left: 0;
+      transform: rotate(-4deg);
+      box-shadow: 0 20px 60px rgba(0,0,0,0.4);
+    }
+    .cc-2 {
+      background: linear-gradient(135deg, #2a0808, #380c0c);
+      border: 1px solid rgba(232,32,32,0.3);
+      width: 300px; height: 180px;
+      top: 60px; left: 40px;
+      transform: rotate(-1deg);
+      box-shadow: 0 20px 60px rgba(232,32,32,0.15);
+    }
+    .cc-3 {
+      background: linear-gradient(135deg, #0a0a0a, #1a1a1a);
+      border: 1px solid var(--border);
+      width: 260px; height: 160px;
+      top: 140px; left: 80px;
+      transform: rotate(2deg);
+      box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+    }
+    .cc-label { font-family: var(--mono); font-size: 10px; color: var(--muted); letter-spacing: 0.1em; text-transform: uppercase; margin-bottom: 8px; }
+    .cc-value { font-family: var(--display); font-size: 28px; color: var(--white); }
+    .cc-value span { color: var(--red); }
+    .cc-sub { font-size: 12px; color: var(--muted); margin-top: 4px; }
+    .cc-dots { display: flex; gap: 4px; margin-top: 12px; }
+    .cc-dot { width: 6px; height: 6px; background: rgba(255,255,255,0.1); border-radius: 50%; }
+    .cc-dot.active { background: var(--red); }
+
+    .company-quote {
+      position: absolute;
+      bottom: 0; right: 0;
+      background: rgba(255,255,255,0.03);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 1.25rem;
+      max-width: 240px;
+    }
+    .company-quote-text { font-size: 13px; color: rgba(255,255,255,0.7); line-height: 1.6; font-style: italic; margin-bottom: 10px; }
+    .company-quote-author { display: flex; align-items: center; gap: 8px; }
+    .company-quote-avatar { width: 28px; height: 28px; border-radius: 50%; background: var(--red); display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 700; }
+    .company-quote-name { font-size: 11px; font-weight: 600; }
+    .company-quote-role { font-size: 10px; color: var(--muted); }
+
+    /* ════════════════════════════════════
+       CTA STRIP
+    ════════════════════════════════════ */
+    .cta-strip {
+      background: var(--red);
+      padding: 5rem 3rem;
+      text-align: center;
+      position: relative;
+      overflow: hidden;
+    }
+    .cta-strip::before {
+      content: '$PEND-R';
+      font-family: var(--display);
+      font-size: 300px;
+      color: rgba(0,0,0,0.08);
+      position: absolute;
+      left: 50%; top: 50%;
+      transform: translate(-50%,-50%);
+      white-space: nowrap;
+      pointer-events: none;
+      letter-spacing: 0.02em;
+    }
+    .cta-title {
+      font-family: var(--display);
+      font-size: clamp(48px, 8vw, 96px);
+      letter-spacing: 0.02em;
+      line-height: 0.9;
+      margin-bottom: 1.5rem;
+      position: relative;
+    }
+    .cta-sub {
+      font-size: 17px;
+      opacity: 0.8;
+      margin-bottom: 2.5rem;
+      position: relative;
+    }
+    .btn-cta-white {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: white;
+      color: var(--red);
+      border: none;
+      border-radius: 100px;
+      padding: 16px 40px;
+      font-family: var(--font);
+      font-size: 16px;
+      font-weight: 800;
+      text-decoration: none;
+      cursor: pointer;
+      position: relative;
+      transition: all 0.25s;
+      box-shadow: 0 8px 40px rgba(0,0,0,0.2);
+    }
+    .btn-cta-white:hover { transform: translateY(-2px); box-shadow: 0 12px 50px rgba(0,0,0,0.3); }
+
+    /* ════════════════════════════════════
+       FOOTER
+    ════════════════════════════════════ */
+    footer {
+      background: var(--ink);
+      padding: 3rem;
+      border-top: 1px solid var(--border);
+    }
+    .footer-inner {
+      max-width: 1200px;
+      margin: 0 auto;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 1rem;
+    }
+    .footer-logo { font-family: var(--display); font-size: 22px; letter-spacing: 0.04em; color: var(--muted); }
+    .footer-logo span { color: var(--red); }
+    .footer-links { display: flex; gap: 1.5rem; }
+    .footer-links a { font-size: 12px; color: var(--muted); text-decoration: none; transition: color 0.2s; }
+    .footer-links a:hover { color: var(--white); }
+    .footer-copy { font-family: var(--mono); font-size: 10px; color: rgba(255,255,255,0.2); }
+
+    /* ════════════════════════════════════
+       SCROLL ANIMATIONS
+    ════════════════════════════════════ */
+    .reveal {
+      opacity: 0;
+      transform: translateY(30px);
+      transition: opacity 0.7s ease, transform 0.7s ease;
+    }
+    .reveal.visible {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    @keyframes fadeUp { from{opacity:0;transform:translateY(20px)} to{opacity:1;transform:translateY(0)} }
+    @keyframes fadeIn { from{opacity:0} to{opacity:1} }
+
+    /* ════════════════════════════════════
+       AUTH MODAL
+    ════════════════════════════════════ */
+    .modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.7);
+      backdrop-filter: blur(10px);
+      z-index: 200;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 1rem;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.3s;
+    }
+    .modal-overlay.open { opacity: 1; pointer-events: all; }
+
+    .auth-modal {
+      background: #111;
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 24px;
+      padding: 2.5rem;
+      width: 100%;
+      max-width: 420px;
+      box-shadow: 0 40px 100px rgba(0,0,0,0.5);
+      transform: translateY(20px) scale(0.97);
+      transition: transform 0.3s;
+    }
+    .modal-overlay.open .auth-modal { transform: translateY(0) scale(1); }
+
+    .modal-close {
+      position: absolute;
+      top: 1.25rem; right: 1.25rem;
+      background: rgba(255,255,255,0.08);
+      border: none;
+      border-radius: 50%;
+      width: 32px; height: 32px;
+      cursor: pointer;
+      color: var(--muted);
+      font-size: 16px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.2s;
+    }
+    .modal-close:hover { background: rgba(255,255,255,0.15); color: white; }
+
+    .modal-header { margin-bottom: 1.75rem; }
+    .modal-logo {
+      font-family: var(--display);
+      font-size: 28px;
+      letter-spacing: 0.04em;
+      margin-bottom: 6px;
+    }
+    .modal-logo span { color: var(--red); }
+    .modal-sub { font-size: 13px; color: var(--muted); }
+
+    .auth-tabs {
+      display: flex;
+      background: rgba(255,255,255,0.05);
+      border-radius: 10px;
+      padding: 4px;
+      margin-bottom: 1.5rem;
+      gap: 4px;
+    }
+    .auth-tab {
+      flex: 1; padding: 8px; border: none; border-radius: 7px;
+      background: transparent; font-family: var(--font); font-size: 13px;
+      font-weight: 500; color: var(--muted); cursor: pointer; transition: all 0.2s;
+    }
+    .auth-tab.active { background: rgba(255,255,255,0.1); color: var(--white); font-weight: 600; }
+
+    .auth-error {
+      background: rgba(232,32,32,0.1);
+      border: 1px solid rgba(232,32,32,0.3);
+      border-radius: 8px;
+      padding: 10px 12px;
+      font-size: 12px;
+      color: #ff6b6b;
+      margin-bottom: 1rem;
+      display: none;
+    }
+
+    .auth-field { margin-bottom: 1rem; }
+    .auth-label { font-size: 11px; font-weight: 600; color: rgba(255,255,255,0.5); margin-bottom: 6px; display: block; letter-spacing: 0.06em; text-transform: uppercase; }
+    .auth-input {
+      width: 100%; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 10px; padding: 12px 14px; font-family: var(--font); font-size: 14px;
+      color: var(--white); outline: none; transition: all 0.2s;
+    }
+    .auth-input:focus { border-color: var(--red); box-shadow: 0 0 0 3px var(--red-glow); }
+    .auth-input::placeholder { color: rgba(255,255,255,0.2); }
+
+    .auth-btn {
+      width: 100%; background: var(--red); color: white; border: none; border-radius: 10px;
+      padding: 13px; font-family: var(--font); font-size: 15px; font-weight: 700; cursor: pointer;
+      transition: all 0.2s; margin-top: 4px; box-shadow: 0 4px 20px var(--red-glow);
+    }
+    .auth-btn:hover { background: #ff2a2a; transform: translateY(-1px); }
+
+    .plan-radio-row { display: flex; gap: 8px; }
+    .plan-radio {
+      flex: 1; border: 1px solid rgba(255,255,255,0.1); border-radius: 10px; padding: 10px;
+      cursor: pointer; transition: all 0.2s; text-align: center;
+    }
+    .plan-radio input { display: none; }
+    .plan-radio-label { font-size: 12px; font-weight: 600; color: var(--muted); }
+    .plan-radio-price { font-family: var(--mono); font-size: 11px; color: rgba(255,255,255,0.3); }
+    .plan-radio:has(input:checked) { border-color: var(--red); background: rgba(232,32,32,0.1); }
+    .plan-radio:has(input:checked) .plan-radio-label { color: white; }
+
+    .auth-privacy { font-size: 10px; color: rgba(255,255,255,0.2); text-align: center; margin-top: 1rem; line-height: 1.5; }
+
+    /* ════════════════════════════════════
+       RESPONSIVE
+    ════════════════════════════════════ */
+    @media (max-width: 900px) {
+      nav { padding: 0 1.5rem; }
+      .nav-links { display: none; }
+      .nav-mobile-btn { display: flex; }
+      section { padding: 5rem 1.5rem; }
+      .features-header { grid-template-columns: 1fr; gap: 2rem; }
+      .features-grid { grid-template-columns: 1fr 1fr; }
+      .pricing-grid { grid-template-columns: 1fr; max-width: 420px; }
+      .company-grid { grid-template-columns: 1fr; }
+      .company-visual { display: none; }
+      .preview-body { grid-template-columns: 1fr; }
+    }
+    @media (max-width: 600px) {
+      .hero-stats { flex-direction: column; gap: 1.5rem; align-items: center; }
+      .features-grid { grid-template-columns: 1fr; }
+      .company-pillars { grid-template-columns: 1fr; }
+      .footer-inner { flex-direction: column; text-align: center; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- ══════════════════ NAV ══════════════════ -->
+<nav id="navbar">
+  <a class="nav-logo" href="#home">
+    <img src="logo.png" alt="Spendr" onerror="this.style.display='none'">
+    <span class="nav-logo-text">$PEND<span>-R</span>₹</span>
+  </a>
+  <ul class="nav-links">
+    <li><a href="#home">Home</a></li>
+    <li><a href="#features">Features</a></li>
+    <li><a href="#pricing">Pricing</a></li>
+    <li><a href="#company">Company</a></li>
+    <li><a href="#" class="nav-cta" onclick="openAuth(event,'login')">Get Started →</a></li>
+  </ul>
+  <button class="nav-mobile-btn" onclick="toggleMobileNav()" aria-label="Menu">
+    <span></span><span></span><span></span>
+  </button>
+</nav>
+
+<!-- ══════════════════ HERO ══════════════════ -->
+<section id="home">
+  <div class="hero-grid"></div>
+  <div class="hero-orb hero-orb-1"></div>
+  <div class="hero-orb hero-orb-2"></div>
+
+  <div class="hero-eyebrow">AI-Powered Finance Tracker</div>
+
+  <h1 class="hero-title">
+    <span class="line-white">KNOW YOUR</span>
+    <span class="line-red">SPEND.</span>
+    <span class="line-white">OWN YOUR</span>
+    <span class="line-red">FUTURE.</span>
+  </h1>
+
+  <p class="hero-subtitle">
+    Import your bank statements, let AI categorise every transaction, and finally understand where your money actually goes — in seconds.
+  </p>
+
+  <div class="hero-actions">
+    <a href="#" class="btn-hero-primary" onclick="openAuth(event,'register')">
+      Start for free
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
+    </a>
+    <a href="#features" class="btn-hero-ghost">See how it works</a>
+  </div>
+
+  <div class="hero-stats">
+    <div>
+      <div class="hero-stat-val">100<span>%</span></div>
+      <div class="hero-stat-label">Private & Local</div>
+    </div>
+    <div>
+      <div class="hero-stat-val"><span>$</span>0</div>
+      <div class="hero-stat-label">Free to Start</div>
+    </div>
+    <div>
+      <div class="hero-stat-val">60<span>s</span></div>
+      <div class="hero-stat-label">To First Insight</div>
+    </div>
+    <div>
+      <div class="hero-stat-val">AI<span>+</span></div>
+      <div class="hero-stat-label">Auto Categorisation</div>
+    </div>
+  </div>
+
+  <div class="scroll-hint">
+    <div class="scroll-mouse"></div>
+    <span>scroll</span>
+  </div>
+</section>
+
+<!-- ══════════════════ TICKER ══════════════════ -->
+<div class="ticker">
+  <div class="ticker-inner" id="ticker-inner">
+    <span class="ticker-item">SMART BUDGETING <span class="ticker-dot"></span></span>
+    <span class="ticker-item">AI CATEGORISATION <span class="ticker-dot"></span></span>
+    <span class="ticker-item">RECURRING DETECTION <span class="ticker-dot"></span></span>
+    <span class="ticker-item">MULTI-ACCOUNT SUPPORT <span class="ticker-dot"></span></span>
+    <span class="ticker-item">SPENDING TRENDS <span class="ticker-dot"></span></span>
+    <span class="ticker-item">PERCEIVED vs ACTUAL <span class="ticker-dot"></span></span>
+    <span class="ticker-item">CSV IMPORT <span class="ticker-dot"></span></span>
+    <span class="ticker-item">DATA EXPORT <span class="ticker-dot"></span></span>
+    <span class="ticker-item">SMART BUDGETING <span class="ticker-dot"></span></span>
+    <span class="ticker-item">AI CATEGORISATION <span class="ticker-dot"></span></span>
+    <span class="ticker-item">RECURRING DETECTION <span class="ticker-dot"></span></span>
+    <span class="ticker-item">MULTI-ACCOUNT SUPPORT <span class="ticker-dot"></span></span>
+    <span class="ticker-item">SPENDING TRENDS <span class="ticker-dot"></span></span>
+    <span class="ticker-item">PERCEIVED vs ACTUAL <span class="ticker-dot"></span></span>
+    <span class="ticker-item">CSV IMPORT <span class="ticker-dot"></span></span>
+    <span class="ticker-item">DATA EXPORT <span class="ticker-dot"></span></span>
+  </div>
+</div>
+
+<!-- ══════════════════ FEATURES ══════════════════ -->
+<section id="features">
+  <div class="section-inner">
+    <div class="features-header reveal">
+      <div>
+        <div class="section-tag">Features</div>
+        <h2 class="section-heading">EVERY TOOL<br>YOU <span class="accent">NEED.</span></h2>
+      </div>
+      <p class="section-body">Stop guessing where your money goes. Spendr gives you a complete picture — from daily coffee runs to annual subscriptions you forgot about.</p>
+    </div>
+
+    <div class="features-grid reveal">
+      <div class="feat-card">
+        <div class="feat-icon">🧠</div>
+        <div class="feat-title">AI Categorisation</div>
+        <div class="feat-desc">Transactions automatically sorted into smart categories using pattern recognition — Groceries, Dining, Transport and more.</div>
+      </div>
+      <div class="feat-card">
+        <div class="feat-icon">💳</div>
+        <div class="feat-title">Multi-Account</div>
+        <div class="feat-desc">Track Everyday, Savings, and Credit Card accounts in one place. Add custom accounts for complete visibility.</div>
+      </div>
+      <div class="feat-card">
+        <div class="feat-icon">🎯</div>
+        <div class="feat-title">Budget Tracking</div>
+        <div class="feat-desc">Set limits per category and get visual progress bars. Month-over-month comparison shows your trajectory.</div>
+        <span class="feat-tag">⭐ Pro</span>
+      </div>
+      <div class="feat-card">
+        <div class="feat-icon">🔁</div>
+        <div class="feat-title">Recurring Detection</div>
+        <div class="feat-desc">AI spots your subscriptions and recurring charges, flags price changes, and identifies cancelled services.</div>
+        <span class="feat-tag">⭐ Pro</span>
+      </div>
+      <div class="feat-card">
+        <div class="feat-icon">📈</div>
+        <div class="feat-title">Trend Analytics</div>
+        <div class="feat-desc">Category trends, spending breakdowns, perceived vs actual comparisons. Know the truth about your habits.</div>
+        <span class="feat-tag">⭐ Pro</span>
+      </div>
+      <div class="feat-card">
+        <div class="feat-icon">💬</div>
+        <div class="feat-title">AI Chat Assistant</div>
+        <div class="feat-desc">Ask your data anything. "Where did my money go last month?" gets you a real, detailed answer in seconds.</div>
+      </div>
+      <div class="feat-card">
+        <div class="feat-icon">🔍</div>
+        <div class="feat-title">Search & Filter</div>
+        <div class="feat-desc">Find any transaction by description, amount, category, or account. Manual category overrides give you full control.</div>
+      </div>
+      <div class="feat-card">
+        <div class="feat-icon">📂</div>
+        <div class="feat-title">CSV Import</div>
+        <div class="feat-desc">Drag & drop your bank export. Supports major Australian banks. Duplicate detection means safe re-uploads.</div>
+      </div>
+      <div class="feat-card">
+        <div class="feat-icon">🔒</div>
+        <div class="feat-title">Private by Design</div>
+        <div class="feat-desc">All data stays on your device. No third-party data sharing. Delete everything in one click, anytime.</div>
+      </div>
+    </div>
+
+    <!-- Dashboard Preview -->
+    <div class="dashboard-preview reveal" style="margin-top:4rem">
+      <div class="preview-bar">
+        <div class="preview-dot"></div>
+        <div class="preview-dot"></div>
+        <div class="preview-dot"></div>
+        <div class="preview-url">spendr-app.onrender.com — Dashboard</div>
+      </div>
+      <div class="preview-body">
+        <div class="preview-left">
+          <div class="prev-stat">
+            <div class="prev-stat-label">This Month</div>
+            <div class="prev-stat-val">$3,241</div>
+          </div>
+          <div class="prev-chart-card">
+            <div class="prev-chart-title">Spend by Category</div>
+            <div class="prev-bar-row">
+              <div class="prev-bar-label">Groceries</div>
+              <div class="prev-bar-track"><div class="prev-bar-fill" style="width:72%;background:#4ade80;animation-delay:0.1s"></div></div>
+              <div class="prev-bar-val">$842</div>
+            </div>
+            <div class="prev-bar-row">
+              <div class="prev-bar-label">Dining</div>
+              <div class="prev-bar-track"><div class="prev-bar-fill" style="width:55%;background:#fb923c;animation-delay:0.2s"></div></div>
+              <div class="prev-bar-val">$640</div>
+            </div>
+            <div class="prev-bar-row">
+              <div class="prev-bar-label">Transport</div>
+              <div class="prev-bar-track"><div class="prev-bar-fill" style="width:38%;background:#60a5fa;animation-delay:0.3s"></div></div>
+              <div class="prev-bar-val">$445</div>
+            </div>
+            <div class="prev-bar-row">
+              <div class="prev-bar-label">Bills</div>
+              <div class="prev-bar-track"><div class="prev-bar-fill" style="width:28%;background:#a78bfa;animation-delay:0.4s"></div></div>
+              <div class="prev-bar-val">$320</div>
+            </div>
+            <div class="prev-bar-row">
+              <div class="prev-bar-label">Shopping</div>
+              <div class="prev-bar-track"><div class="prev-bar-fill" style="width:20%;background:#fbbf24;animation-delay:0.5s"></div></div>
+              <div class="prev-bar-val">$234</div>
+            </div>
+          </div>
+        </div>
+        <div class="prev-chat">
+          <div class="prev-chat-header">
+            <div class="prev-chat-dot"></div>
+            Finance Assistant · powered by AI
+          </div>
+          <div class="prev-chat-body">
+            <div class="prev-msg ai">
+              <div class="prev-msg-avatar">AI</div>
+              <div class="prev-msg-bubble">You spent <strong>$3,241</strong> this month. Your biggest category is Groceries at $842 — up 12% from last month. 🛒</div>
+            </div>
+            <div class="prev-msg ai">
+              <div class="prev-msg-avatar">AI</div>
+              <div class="prev-msg-bubble">I also noticed 6 recurring subscriptions totalling <strong>$94/month</strong>. Netflix went up $2 in November.</div>
+            </div>
+            <div class="prev-msg user">
+              <div class="prev-msg-avatar">you</div>
+              <div class="prev-msg-bubble">Where can I save the most?</div>
+            </div>
+            <div class="prev-msg ai">
+              <div class="prev-msg-avatar">AI</div>
+              <div class="prev-msg-bubble">Dining is your biggest opportunity — $640 vs a typical $380 for your income range. Cutting 3 takeaways/week could save ~$180/month. 💡</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════════════ PRICING ══════════════════ -->
+<section id="pricing">
+  <div class="section-inner">
+    <div class="pricing-header reveal">
+      <div class="section-tag" style="justify-content:center">Pricing</div>
+      <h2 class="section-heading" style="text-align:center">SIMPLE.<br><span class="accent">HONEST.</span></h2>
+      <p class="section-body" style="text-align:center;margin:0 auto">Start free, upgrade when you're ready. No surprise fees, no data selling, no BS.</p>
+    </div>
+
+    <div class="pricing-grid reveal">
+      <!-- FREE -->
+      <div class="plan-card plan-free">
+        <div class="plan-name">Free</div>
+        <div class="plan-price"><span class="currency">$</span>0<span class="period">/mo</span></div>
+        <div class="plan-tagline">Everything you need to get started</div>
+        <div class="plan-divider"></div>
+        <div class="plan-features">
+          <div class="plan-feat"><div class="plan-feat-icon feat-yes">✓</div>CSV import & parsing</div>
+          <div class="plan-feat"><div class="plan-feat-icon feat-yes">✓</div>AI categorisation</div>
+          <div class="plan-feat"><div class="plan-feat-icon feat-yes">✓</div>Basic spending insights</div>
+          <div class="plan-feat"><div class="plan-feat-icon feat-yes">✓</div>AI chat assistant</div>
+          <div class="plan-feat"><div class="plan-feat-icon feat-yes">✓</div>Multi-account support</div>
+          <div class="plan-feat"><div class="plan-feat-icon feat-yes">✓</div>Data export</div>
+          <div class="plan-feat"><div class="plan-feat-icon feat-no">—</div>Budget tracking</div>
+          <div class="plan-feat"><div class="plan-feat-icon feat-no">—</div>Recurring detection</div>
+          <div class="plan-feat"><div class="plan-feat-icon feat-no">—</div>Advanced analytics</div>
+        </div>
+        <a href="#" class="btn-plan-free" onclick="openAuth(event,'register')">Get started free</a>
+      </div>
+
+      <!-- PRO -->
+      <div class="plan-card plan-pro">
+        <div class="plan-name" style="color:#f59e0b">Pro ⭐</div>
+        <div class="plan-price" style="color:#f59e0b"><span class="currency" style="color:#f59e0b">$</span>9<span class="period">/mo</span></div>
+        <div class="plan-tagline" style="color:rgba(245,158,11,0.7)">For serious money management</div>
+        <div class="plan-divider"></div>
+        <div class="plan-features">
+          <div class="plan-feat"><div class="plan-feat-icon feat-yes">✓</div>Everything in Free</div>
+          <div class="plan-feat"><div class="plan-feat-icon feat-yes">✓</div>Budget tracking & alerts</div>
+          <div class="plan-feat"><div class="plan-feat-icon feat-yes">✓</div>Recurring expense detection</div>
+          <div class="plan-feat"><div class="plan-feat-icon feat-yes">✓</div>Full trend analytics</div>
+          <div class="plan-feat"><div class="plan-feat-icon feat-yes">✓</div>Perceived vs actual</div>
+          <div class="plan-feat"><div class="plan-feat-icon feat-yes">✓</div>12-month history</div>
+          <div class="plan-feat"><div class="plan-feat-icon feat-yes">✓</div>Priority AI support</div>
+          <div class="plan-feat"><div class="plan-feat-icon feat-yes">✓</div>Early access to new features</div>
+        </div>
+        <a href="#" class="btn-plan-pro" onclick="openAuth(event,'register')">Get Pro — $9/mo</a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════════════ COMPANY ══════════════════ -->
+<section id="company">
+  <div class="section-inner">
+    <div class="company-grid">
+      <div class="company-text reveal">
+        <div class="section-tag">Company</div>
+        <h2 class="section-heading">BUILT FOR<br>REAL <span class="accent">PEOPLE.</span></h2>
+        <p class="section-body">Spendr was born from frustration — banking apps that hide your data, spreadsheets that take hours, and advice that doesn't fit real Australian life.</p>
+        <p class="section-body" style="margin-top:1rem">We built the tool we wished existed: simple to use, honest with your data, and actually useful. No subscriptions hiding behind paywalls, no selling your data, no fluff.</p>
+        <div class="company-pillars" style="margin-top:2rem">
+          <div class="pillar">
+            <div class="pillar-icon">🛡️</div>
+            <div class="pillar-title">Privacy First</div>
+            <div class="pillar-desc">Your financial data stays on your device. Always.</div>
+          </div>
+          <div class="pillar">
+            <div class="pillar-icon">⚡</div>
+            <div class="pillar-title">Actually Fast</div>
+            <div class="pillar-desc">From CSV to insights in under 60 seconds.</div>
+          </div>
+          <div class="pillar">
+            <div class="pillar-icon">🇦🇺</div>
+            <div class="pillar-title">Built for AU</div>
+            <div class="pillar-desc">Designed around Australian banks and spending habits.</div>
+          </div>
+          <div class="pillar">
+            <div class="pillar-icon">🤝</div>
+            <div class="pillar-title">No BS</div>
+            <div class="pillar-desc">Transparent pricing. Delete your data anytime.</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="company-visual reveal">
+        <div class="company-card-stack">
+          <div class="cc cc-1">
+            <div class="cc-label">Total Saved This Year</div>
+            <div class="cc-value"><span>$</span>4,820</div>
+            <div class="cc-sub">↑ 23% from last year</div>
+            <div class="cc-dots">
+              <div class="cc-dot active"></div>
+              <div class="cc-dot active"></div>
+              <div class="cc-dot active"></div>
+              <div class="cc-dot"></div>
+              <div class="cc-dot"></div>
+            </div>
+          </div>
+          <div class="cc cc-2">
+            <div class="cc-label">Subscriptions detected</div>
+            <div class="cc-value">8 <span style="font-size:18px;font-family:var(--font);font-weight:500">active</span></div>
+            <div class="cc-sub" style="color:rgba(232,32,32,0.7)">1 price increase spotted ↑</div>
+          </div>
+          <div class="cc cc-3">
+            <div class="cc-label">Budget Status — November</div>
+            <div class="cc-value" style="font-size:20px;font-family:var(--font);font-weight:700;color:rgba(255,255,255,0.7)">5 on track · <span style="color:#e82020">2 over</span></div>
+          </div>
+          <div class="company-quote">
+            <div class="company-quote-text">"First time I actually understand where my pay goes each month. Game changer."</div>
+            <div class="company-quote-author">
+              <div class="company-quote-avatar">JM</div>
+              <div>
+                <div class="company-quote-name">James M.</div>
+                <div class="company-quote-role">Pro user · Melbourne</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════════════ CTA ══════════════════ -->
+<div class="cta-strip">
+  <div class="cta-title">READY TO<br>TAKE CONTROL?</div>
+  <div class="cta-sub">Join thousands making smarter money decisions. Free to start, no card required.</div>
+  <a href="#" class="btn-cta-white" onclick="openAuth(event,'register')">
+    Get started for free →
+  </a>
+</div>
+
+<!-- ══════════════════ FOOTER ══════════════════ -->
+<footer>
+  <div class="footer-inner">
+    <div class="footer-logo">$PEND<span>-R</span>₹</div>
+    <div class="footer-links">
+      <a href="#home">Home</a>
+      <a href="#features">Features</a>
+      <a href="#pricing">Pricing</a>
+      <a href="#company">Company</a>
+      <a href="#" onclick="openAuth(event,'login')">Sign in</a>
+    </div>
+    <div class="footer-copy">© 2026 Cyalnix Pty Ltd · Not financial advice</div>
+  </div>
+</footer>
+
+<!-- ══════════════════ AUTH MODAL ══════════════════ -->
+<div class="modal-overlay" id="auth-modal">
+  <div class="auth-modal" style="position:relative">
+    <button class="modal-close" onclick="closeAuth()">✕</button>
+    <div class="modal-header">
+      <div class="modal-logo">$PEND<span>-R</span>₹</div>
+      <div class="modal-sub">Friend in Spend</div>
+    </div>
+
+    <div class="auth-tabs">
+      <button class="auth-tab active" onclick="switchAuthTab('login')">Sign In</button>
+      <button class="auth-tab" onclick="switchAuthTab('register')">Create Account</button>
+    </div>
+
+    <div class="auth-error" id="auth-error"></div>
+
+    <!-- LOGIN -->
+    <div id="login-form">
+      <div class="auth-field">
+        <label class="auth-label">Email</label>
+        <input type="text" class="auth-input" id="login-email" placeholder="you@example.com">
+      </div>
+      <div class="auth-field">
+        <label class="auth-label">Password</label>
+        <input type="text" class="auth-input" id="login-password" placeholder="••••••••" style="-webkit-text-security:disc">
+      </div>
+      <button class="auth-btn" onclick="doLogin()">Sign In →</button>
+    </div>
+
+    <!-- REGISTER -->
+    <div id="register-form" style="display:none">
+      <div class="auth-field">
+        <label class="auth-label">Full Name</label>
+        <input type="text" class="auth-input" id="reg-name" placeholder="Alex Smith">
+      </div>
+      <div class="auth-field">
+        <label class="auth-label">Email</label>
+        <input type="text" class="auth-input" id="reg-email" placeholder="you@example.com">
+      </div>
+      <div class="auth-field">
+        <label class="auth-label">Password</label>
+        <input type="text" class="auth-input" id="reg-password" placeholder="Min. 6 characters" style="-webkit-text-security:disc">
+      </div>
+      <div class="auth-field">
+        <label class="auth-label">Plan</label>
+        <div class="plan-radio-row">
+          <label class="plan-radio">
+            <input type="radio" name="reg-plan" value="free" checked>
+            <div class="plan-radio-label">Free</div>
+            <div class="plan-radio-price">$0/mo</div>
+          </label>
+          <label class="plan-radio">
+            <input type="radio" name="reg-plan" value="pro">
+            <div class="plan-radio-label">⭐ Pro</div>
+            <div class="plan-radio-price">$9/mo</div>
+          </label>
+        </div>
+      </div>
+      <button class="auth-btn" onclick="doRegister()">Create Account →</button>
+    </div>
+
+    <div class="auth-privacy">🔒 Data stored locally on your device. We never sell your information.</div>
+  </div>
+</div>
+
+<script>
+  // ── NAVBAR SCROLL ──
+  window.addEventListener('scroll', () => {
+    document.getElementById('navbar').classList.toggle('scrolled', window.scrollY > 40);
+  });
+
+  // ── MOBILE NAV ──
+  function toggleMobileNav() {
+    // Simple scroll to features on mobile
+    document.getElementById('features').scrollIntoView({ behavior: 'smooth' });
+  }
+
+  // ── SCROLL REVEAL ──
+  const observer = new IntersectionObserver(entries => {
+    entries.forEach(e => { if (e.isIntersecting) { e.target.classList.add('visible'); } });
+  }, { threshold: 0.1, rootMargin: '0px 0px -60px 0px' });
+  document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
+
+  // ── AUTH MODAL ──
+  function openAuth(e, tab) {
+    e?.preventDefault();
+    document.getElementById('auth-modal').classList.add('open');
+    switchAuthTab(tab || 'login');
+    document.getElementById('auth-error').style.display = 'none';
+  }
+  function closeAuth() { document.getElementById('auth-modal').classList.remove('open'); }
+  document.getElementById('auth-modal').addEventListener('click', function(e) { if (e.target === this) closeAuth(); });
+  document.addEventListener('keydown', e => { if (e.key === 'Escape') closeAuth(); });
+
+  function switchAuthTab(tab) {
+    document.querySelectorAll('.auth-tab').forEach((t,i) => t.classList.toggle('active', (tab==='login'&&i===0)||(tab==='register'&&i===1)));
+    document.getElementById('login-form').style.display    = tab === 'login'    ? '' : 'none';
+    document.getElementById('register-form').style.display = tab === 'register' ? '' : 'none';
+    document.getElementById('auth-error').style.display    = 'none';
+  }
+
+  function showAuthError(msg) {
+    const el = document.getElementById('auth-error');
+    el.textContent = msg; el.style.display = 'block';
+  }
+
+  function doLogin() {
+    const email = document.getElementById('login-email').value.trim();
+    const pass  = document.getElementById('login-password').value.trim();
+    if (!email || !pass) return showAuthError('Please enter your email and password.');
+    const stored = localStorage.getItem('spendr_user_' + email);
+    if (!stored) return showAuthError('No account found. Please register first.');
+    const user = JSON.parse(stored);
+    if (user.password !== btoa(pass)) return showAuthError('Incorrect password. Please try again.');
+    // Save session and redirect to app
+    localStorage.setItem('spendr_session', JSON.stringify({ name: user.name, email: user.email, plan: user.plan }));
+    window.location.href = "app.html";
+  }
+
+  function doRegister() {
+    const name  = document.getElementById('reg-name').value.trim();
+    const email = document.getElementById('reg-email').value.trim();
+    const pass  = document.getElementById('reg-password').value.trim();
+    const plan  = document.querySelector('input[name="reg-plan"]:checked')?.value || 'free';
+    if (!name || !email || !pass) return showAuthError('Please fill in all fields.');
+    if (!email.includes('@'))     return showAuthError('Enter a valid email address.');
+    if (pass.length < 6)          return showAuthError('Password must be at least 6 characters.');
+    if (localStorage.getItem('spendr_user_' + email)) return showAuthError('An account with this email already exists.');
+    localStorage.setItem('spendr_user_' + email, JSON.stringify({ name, email, password: btoa(pass), plan }));
+    localStorage.setItem('spendr_session', JSON.stringify({ name, email, plan }));
+    window.location.href = "app.html";
+  }
+
+  // ── STAGGER REVEAL DELAYS ──
+  document.querySelectorAll('.feat-card').forEach((el, i) => {
+    el.style.transitionDelay = (i * 0.06) + 's';
+  });
+</script>
+</body>
+</html>

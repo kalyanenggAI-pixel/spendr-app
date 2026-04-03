@@ -1,0 +1,677 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>$PEND-R₹ — Friend in Spend</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@300;400;500&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    :root {
+      --red: #e82020; --red-dark: #b81818; --red-light: #ff4444;
+      --red-pale: #fff0f0; --red-tint: #fde8e8;
+      --white: #ffffff; --off-white: #fafafa;
+      --gray-50: #f8f8f8; --gray-100: #f0f0f0; --gray-200: #e4e4e4;
+      --gray-400: #a0a0a0; --gray-600: #666666; --gray-800: #222222; --ink: #111111;
+      --green: #16a34a; --green-pale: #f0fdf4; --amber: #d97706; --amber-pale: #fffbeb;
+      --blue: #2563eb; --blue-pale: #eff6ff;
+      --border: rgba(0,0,0,0.08); --border2: rgba(0,0,0,0.14);
+      --shadow-sm: 0 1px 3px rgba(0,0,0,0.08), 0 1px 2px rgba(0,0,0,0.04);
+      --shadow-md: 0 4px 12px rgba(0,0,0,0.08), 0 2px 4px rgba(0,0,0,0.04);
+      --shadow-lg: 0 12px 32px rgba(0,0,0,0.10), 0 4px 8px rgba(0,0,0,0.06);
+      --font: 'Outfit', sans-serif; --mono: 'JetBrains Mono', monospace;
+      --radius: 12px; --radius-lg: 18px;
+    }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { scroll-behavior: smooth; }
+    body { background: var(--gray-50); color: var(--ink); font-family: var(--font); min-height: 100vh; font-size: 14px; line-height: 1.5; }
+
+    /* ── AUTH SCREENS ── */
+    .auth-screen {
+      min-height: 100vh; display: flex; align-items: center; justify-content: center;
+      background: linear-gradient(135deg, #fff0f0 0%, #ffffff 50%, #fff8f8 100%);
+      padding: 2rem;
+    }
+    .auth-box {
+      background: white; border-radius: 24px; border: 1px solid var(--border);
+      box-shadow: var(--shadow-lg); padding: 2.5rem; width: 100%; max-width: 420px;
+    }
+    .auth-logo { display: flex; align-items: center; gap: 12px; margin-bottom: 2rem; }
+    .auth-logo img { height: 44px; border-radius: 10px; }
+    .auth-logo-text { font-size: 22px; font-weight: 800; color: var(--red); letter-spacing: -0.03em; }
+    .auth-tagline { font-size: 11px; color: var(--gray-400); font-family: var(--mono); }
+    .auth-title { font-size: 22px; font-weight: 700; margin-bottom: 6px; }
+    .auth-sub { font-size: 13px; color: var(--gray-600); margin-bottom: 1.5rem; }
+    .auth-tabs { display: flex; background: var(--gray-100); border-radius: 10px; padding: 4px; margin-bottom: 1.5rem; gap: 4px; }
+    .auth-tab { flex: 1; padding: 8px; border: none; border-radius: 7px; background: transparent; font-family: var(--font); font-size: 13px; font-weight: 500; color: var(--gray-600); cursor: pointer; transition: all 0.2s; }
+    .auth-tab.active { background: white; color: var(--ink); box-shadow: var(--shadow-sm); font-weight: 600; }
+    .auth-field { margin-bottom: 1rem; }
+    .auth-label { font-size: 12px; font-weight: 600; color: var(--gray-800); margin-bottom: 5px; display: block; }
+    .auth-input {
+      width: 100%; border: 1.5px solid var(--border2); border-radius: var(--radius); padding: 11px 14px;
+      font-family: var(--font); font-size: 14px; color: var(--ink); outline: none; transition: all 0.2s;
+    }
+    .auth-input:focus { border-color: var(--red); box-shadow: 0 0 0 3px rgba(232,32,32,0.08); }
+    .auth-btn {
+      width: 100%; background: var(--red); color: white; border: none; border-radius: var(--radius);
+      padding: 13px; font-family: var(--font); font-size: 15px; font-weight: 600; cursor: pointer; transition: all 0.2s; margin-top: 4px;
+    }
+    .auth-btn:hover { background: var(--red-dark); transform: translateY(-1px); box-shadow: var(--shadow-md); }
+    .auth-error { background: var(--red-pale); border: 1px solid rgba(232,32,32,0.2); border-radius: 8px; padding: 10px 12px; font-size: 12px; color: var(--red); margin-bottom: 1rem; display: none; }
+    .auth-privacy { font-size: 11px; color: var(--gray-400); text-align: center; margin-top: 1rem; line-height: 1.5; }
+
+    /* ── HEADER ── */
+    header { background: var(--white); border-bottom: 1px solid var(--border); box-shadow: var(--shadow-sm); position: sticky; top: 0; z-index: 100; }
+    .header-inner { max-width: 1400px; margin: 0 auto; padding: 0 2rem; height: 64px; display: flex; align-items: center; justify-content: space-between; gap: 1rem; }
+    .logo-wrap { display: flex; align-items: center; gap: 12px; }
+    .logo-img { height: 36px; border-radius: 8px; }
+    .logo-tagline { font-size: 11px; color: var(--gray-400); font-family: var(--mono); border-left: 1px solid var(--border2); padding-left: 12px; }
+    .header-right { display: flex; align-items: center; gap: 10px; }
+    .header-user { font-size: 13px; font-weight: 600; color: var(--gray-800); }
+    .header-plan { background: var(--red-pale); color: var(--red); font-size: 10px; font-weight: 700; padding: 3px 10px; border-radius: 100px; border: 1px solid rgba(232,32,32,0.2); letter-spacing: 0.05em; cursor: pointer; }
+    .header-plan.pro { background: #fef3c7; color: #92400e; border-color: rgba(217,119,6,0.3); }
+    .btn-logout { background: none; border: 1px solid var(--border2); border-radius: 8px; padding: 6px 12px; font-family: var(--font); font-size: 12px; color: var(--gray-600); cursor: pointer; transition: all 0.2s; }
+    .btn-logout:hover { border-color: var(--red); color: var(--red); }
+
+    /* ── NAV TABS ── */
+    .nav-bar { background: white; border-bottom: 1px solid var(--border); overflow-x: auto; }
+    .nav-inner { max-width: 1400px; margin: 0 auto; padding: 0 2rem; display: flex; gap: 0; }
+    .nav-tab { padding: 14px 18px; font-size: 13px; font-weight: 500; color: var(--gray-600); border: none; background: none; cursor: pointer; border-bottom: 2.5px solid transparent; transition: all 0.2s; white-space: nowrap; font-family: var(--font); display: flex; align-items: center; gap: 6px; }
+    .nav-tab:hover { color: var(--ink); }
+    .nav-tab.active { color: var(--red); border-bottom-color: var(--red); font-weight: 600; }
+    .nav-tab .pro-badge { font-size: 9px; background: var(--amber); color: white; padding: 1px 5px; border-radius: 4px; font-weight: 700; }
+
+    /* ── TOTALS STRIP ── */
+    .totals-strip { background: var(--red); color: white; }
+    .totals-inner { max-width: 1400px; margin: 0 auto; padding: 0 2rem; display: grid; grid-template-columns: repeat(4, 1fr); }
+    .total-cell { padding: 1rem 1.5rem; border-right: 1px solid rgba(255,255,255,0.15); animation: fadeUp 0.4s ease both; }
+    .total-cell:last-child { border-right: none; }
+    .total-label { font-size: 9px; font-family: var(--mono); letter-spacing: 0.12em; text-transform: uppercase; opacity: 0.7; margin-bottom: 3px; }
+    .total-value { font-size: 1.5rem; font-weight: 700; letter-spacing: -0.02em; line-height: 1; }
+
+    /* ── PAGE VIEWS ── */
+    .view { display: none; max-width: 1400px; margin: 0 auto; padding: 1.5rem 2rem 3rem; }
+    .view.active { display: block; }
+    .view-grid { display: grid; grid-template-columns: 360px 1fr; gap: 1.5rem; align-items: start; }
+    .left-col { display: flex; flex-direction: column; gap: 1.5rem; }
+
+    /* ── CARD ── */
+    .card { background: var(--white); border-radius: var(--radius-lg); border: 1px solid var(--border); box-shadow: var(--shadow-sm); overflow: hidden; }
+    .card-header { padding: 1rem 1.25rem; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; }
+    .card-title { font-size: 11px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: var(--gray-600); font-family: var(--mono); }
+    .card-body { padding: 1.25rem; }
+
+    /* ── INPUTS ── */
+    textarea { width: 100%; background: var(--gray-50); border: 1.5px solid var(--border2); border-radius: var(--radius); padding: 12px; font-family: var(--mono); font-size: 11px; color: var(--ink); resize: none; height: 110px; outline: none; line-height: 1.7; transition: border-color 0.2s, box-shadow 0.2s; }
+    textarea:focus { border-color: var(--red); box-shadow: 0 0 0 3px rgba(232,32,32,0.08); }
+    textarea::placeholder { color: var(--gray-400); }
+    input[type="text"], input[type="number"], select {
+      width: 100%; background: var(--gray-50); border: 1.5px solid var(--border2); border-radius: var(--radius); padding: 9px 12px;
+      font-family: var(--font); font-size: 13px; color: var(--ink); outline: none; transition: all 0.2s;
+    }
+    input[type="text"]:focus, input[type="number"]:focus, select:focus { border-color: var(--red); box-shadow: 0 0 0 3px rgba(232,32,32,0.08); }
+
+    /* ── BUTTONS ── */
+    .btn-row { display: flex; gap: 8px; margin-top: 10px; }
+    .btn-primary { flex: 1; background: var(--red); color: white; border: none; border-radius: var(--radius); padding: 11px; font-family: var(--font); font-size: 14px; font-weight: 600; cursor: pointer; transition: all 0.2s; }
+    .btn-primary:hover { background: var(--red-dark); transform: translateY(-1px); box-shadow: var(--shadow-md); }
+    .btn-primary:active { transform: none; }
+    .btn-ghost { background: white; border: 1px solid var(--border2); border-radius: var(--radius); padding: 11px 16px; font-family: var(--font); font-size: 13px; font-weight: 500; color: var(--gray-600); cursor: pointer; transition: all 0.2s; }
+    .btn-ghost:hover { border-color: var(--red); color: var(--red); }
+    .btn-sm { padding: 6px 12px; font-size: 12px; border-radius: 8px; border: none; cursor: pointer; font-family: var(--font); font-weight: 500; transition: all 0.15s; }
+    .btn-sm-primary { background: var(--red); color: white; }
+    .btn-sm-primary:hover { background: var(--red-dark); }
+    .btn-sm-ghost { background: white; border: 1px solid var(--border2); color: var(--gray-600); }
+    .btn-sm-ghost:hover { border-color: var(--red); color: var(--red); }
+
+    /* ── HOW-TO ── */
+    .how-to { background: var(--red-pale); border: 1px solid rgba(232,32,32,0.15); border-radius: var(--radius); padding: 12px 14px; margin-bottom: 12px; }
+    .how-to-title { font-size: 11px; font-weight: 700; color: var(--red); margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.06em; }
+    .how-to ol { padding-left: 1.1rem; display: flex; flex-direction: column; gap: 3px; }
+    .how-to li { font-size: 12px; color: var(--gray-800); line-height: 1.5; }
+    .how-to strong { color: var(--ink); font-weight: 600; }
+
+    /* ── FILE UPLOAD ── */
+    .file-drop { border: 2px dashed var(--border2); border-radius: var(--radius); padding: 20px; text-align: center; cursor: pointer; transition: all 0.2s; margin-bottom: 10px; }
+    .file-drop:hover, .file-drop.drag { border-color: var(--red); background: var(--red-pale); }
+    .file-drop-icon { font-size: 28px; margin-bottom: 6px; }
+    .file-drop-text { font-size: 12px; color: var(--gray-600); }
+    .file-drop-text strong { color: var(--red); }
+    #file-input { display: none; }
+
+    /* ── ACCOUNT SELECTOR ── */
+    .account-row { display: flex; gap: 8px; margin-bottom: 12px; flex-wrap: wrap; }
+    .acct-chip { padding: 5px 12px; border-radius: 100px; font-size: 11px; font-weight: 600; cursor: pointer; border: 1.5px solid transparent; transition: all 0.2s; }
+    .acct-chip.active { border-color: var(--red); background: var(--red-pale); color: var(--red); }
+    .acct-chip:not(.active) { background: var(--gray-100); color: var(--gray-600); border-color: transparent; }
+    .acct-chip:hover:not(.active) { border-color: var(--border2); color: var(--ink); }
+
+    /* ── STATUS ── */
+    #upload-status { margin-top: 10px; font-family: var(--mono); font-size: 11px; min-height: 18px; }
+    .status-success { color: #16a34a; }
+    .status-error { color: var(--red); }
+    .status-info { color: #2563eb; }
+
+    /* ── CHART ── */
+    #categoryChart { width: 100% !important; }
+
+    /* ── SEARCH ── */
+    .search-row { display: flex; gap: 8px; margin-bottom: 12px; }
+    .search-wrap { flex: 1; position: relative; }
+    .search-wrap svg { position: absolute; left: 10px; top: 50%; transform: translateY(-50%); width: 14px; height: 14px; stroke: var(--gray-400); }
+    .search-input { padding-left: 32px !important; }
+    .filter-select { width: auto; flex-shrink: 0; }
+
+    /* ── TRANSACTIONS ── */
+    .txn-scroll { max-height: 380px; overflow-y: auto; padding: 0 1.25rem 1rem; }
+    .txn-scroll::-webkit-scrollbar { width: 3px; }
+    .txn-scroll::-webkit-scrollbar-thumb { background: var(--gray-200); border-radius: 3px; }
+    .txn-item { display: flex; align-items: center; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid var(--border); animation: fadeUp 0.3s ease both; }
+    .txn-item:last-child { border-bottom: none; }
+    .txn-left { display: flex; align-items: center; gap: 10px; flex: 1; min-width: 0; }
+    .txn-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+    .txn-info { min-width: 0; }
+    .txn-cat { font-size: 12px; font-weight: 600; color: var(--ink); }
+    .txn-note { font-size: 11px; color: var(--gray-400); font-family: var(--mono); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 180px; }
+    .txn-meta { font-size: 10px; color: var(--gray-400); }
+    .txn-right { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
+    .txn-amount { font-size: 14px; font-weight: 700; font-family: var(--mono); color: var(--ink); }
+    .txn-cat-select { font-size: 11px; border: 1px solid var(--border2); border-radius: 6px; padding: 2px 6px; font-family: var(--font); color: var(--gray-600); cursor: pointer; background: white; outline: none; }
+    .txn-cat-select:focus { border-color: var(--red); }
+    .txn-acct-badge { font-size: 9px; background: var(--blue-pale); color: var(--blue); padding: 2px 7px; border-radius: 4px; font-weight: 600; }
+    .txn-empty { padding: 2rem; text-align: center; color: var(--gray-400); font-size: 13px; }
+
+    /* ── BUDGET ── */
+    .budget-grid { display: grid; gap: 12px; }
+    .budget-item { background: var(--gray-50); border: 1px solid var(--border); border-radius: var(--radius); padding: 14px; }
+    .budget-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+    .budget-cat { font-size: 13px; font-weight: 600; }
+    .budget-amounts { font-size: 12px; color: var(--gray-600); font-family: var(--mono); }
+    .budget-bar-wrap { height: 6px; background: var(--gray-200); border-radius: 99px; overflow: hidden; margin-bottom: 6px; }
+    .budget-bar { height: 100%; border-radius: 99px; transition: width 0.6s ease; }
+    .budget-footer { display: flex; justify-content: space-between; align-items: center; }
+    .budget-pct { font-size: 11px; font-weight: 600; font-family: var(--mono); }
+    .budget-status { font-size: 10px; padding: 2px 8px; border-radius: 4px; font-weight: 600; }
+    .budget-ok { background: var(--green-pale); color: var(--green); }
+    .budget-warn { background: var(--amber-pale); color: var(--amber); }
+    .budget-over { background: var(--red-pale); color: var(--red); }
+    .add-budget-form { display: flex; gap: 8px; flex-wrap: wrap; padding: 1rem 1.25rem; border-top: 1px solid var(--border); }
+    .add-budget-form select, .add-budget-form input { flex: 1; min-width: 120px; }
+
+    /* ── RECURRING ── */
+    .recurring-grid { display: grid; gap: 10px; }
+    .rec-item { display: flex; justify-content: space-between; align-items: center; background: var(--gray-50); border: 1px solid var(--border); border-radius: 10px; padding: 12px 14px; }
+    .rec-left { display: flex; align-items: center; gap: 10px; }
+    .rec-icon { width: 32px; height: 32px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 14px; background: var(--red-pale); }
+    .rec-name { font-size: 13px; font-weight: 600; }
+    .rec-freq { font-size: 11px; color: var(--gray-400); font-family: var(--mono); }
+    .rec-amount { font-size: 15px; font-weight: 700; font-family: var(--mono); color: var(--ink); }
+    .rec-monthly { font-size: 10px; color: var(--gray-400); text-align: right; }
+    .rec-badge { font-size: 9px; padding: 2px 7px; border-radius: 4px; font-weight: 700; }
+    .rec-new { background: var(--green-pale); color: var(--green); }
+    .rec-changed { background: var(--amber-pale); color: var(--amber); }
+    .rec-cancelled { background: var(--gray-100); color: var(--gray-400); text-decoration: line-through; }
+
+    /* ── ANALYTICS ── */
+    .analytics-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; }
+    .insight-card { background: var(--gray-50); border: 1px solid var(--border); border-radius: var(--radius); padding: 1.25rem; }
+    .insight-card-title { font-size: 11px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: var(--gray-600); margin-bottom: 12px; }
+    .trend-row { display: flex; justify-content: space-between; align-items: center; padding: 6px 0; border-bottom: 1px solid var(--border); }
+    .trend-row:last-child { border-bottom: none; }
+    .trend-cat { font-size: 12px; font-weight: 500; display: flex; align-items: center; gap: 6px; }
+    .trend-vals { display: flex; gap: 12px; font-family: var(--mono); font-size: 11px; }
+    .trend-up { color: var(--red); }
+    .trend-down { color: var(--green); }
+    .perceived-form { display: flex; flex-direction: column; gap: 10px; }
+    .perceived-row { display: flex; justify-content: space-between; align-items: center; gap: 10px; }
+    .perceived-label { font-size: 12px; font-weight: 500; flex: 1; }
+    .perceived-input { width: 90px; }
+    .perceived-actual { font-size: 12px; font-family: var(--mono); color: var(--gray-600); width: 80px; text-align: right; }
+    .perceived-diff { font-size: 11px; font-weight: 600; font-family: var(--mono); width: 70px; text-align: right; }
+
+    /* ── AI CHAT ── */
+    .chat-card { background: white; border: 1px solid var(--border); border-radius: var(--radius-lg); box-shadow: var(--shadow-sm); display: flex; flex-direction: column; height: 620px; overflow: hidden; }
+    .chat-header { background: var(--red); color: white; padding: 1rem 1.25rem; display: flex; align-items: center; gap: 10px; flex-shrink: 0; }
+    .ai-dot { width: 8px; height: 8px; background: #4ade80; border-radius: 50%; box-shadow: 0 0 0 2px rgba(74,222,128,0.3); animation: pulse 2s infinite; }
+    @keyframes pulse { 0%,100%{box-shadow:0 0 0 2px rgba(74,222,128,0.3)} 50%{box-shadow:0 0 0 5px rgba(74,222,128,0)} }
+    .chat-header-title { font-size: 15px; font-weight: 700; }
+    .chat-header-sub { font-size: 11px; opacity: 0.7; margin-left: auto; font-family: var(--mono); }
+    .chat-messages { flex: 1; overflow-y: auto; padding: 1rem 1.25rem; display: flex; flex-direction: column; gap: 12px; }
+    .chat-messages::-webkit-scrollbar { width: 3px; }
+    .chat-messages::-webkit-scrollbar-thumb { background: var(--gray-200); border-radius: 3px; }
+    .chat-empty { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; text-align: center; color: var(--gray-400); gap: 10px; }
+    .chat-empty-logo { height: 50px; border-radius: 10px; opacity: 0.4; }
+    .chat-empty-title { font-size: 16px; font-weight: 700; color: var(--gray-800); }
+    .chat-empty p { font-size: 13px; max-width: 260px; line-height: 1.5; }
+    .msg { display: flex; gap: 8px; align-items: flex-start; animation: fadeUp 0.2s ease; }
+    .msg.user { flex-direction: row-reverse; }
+    .msg-avatar { width: 28px; height: 28px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 9px; font-weight: 700; letter-spacing: 0.04em; flex-shrink: 0; font-family: var(--mono); }
+    .msg.ai .msg-avatar { background: var(--red); color: white; }
+    .msg.user .msg-avatar { background: var(--gray-800); color: white; }
+    .msg-bubble { max-width: 85%; padding: 11px 14px; border-radius: 14px; font-size: 13px; line-height: 1.55; }
+    .msg.ai .msg-bubble { background: var(--gray-50); border: 1px solid var(--border); border-top-left-radius: 4px; }
+    .msg.user .msg-bubble { background: var(--red); color: white; border-top-right-radius: 4px; }
+    .msg-bubble h4 { font-size: 12px; font-weight: 700; margin: 10px 0 4px; text-transform: uppercase; letter-spacing: 0.05em; opacity: 0.7; }
+    .msg-bubble h4:first-child { margin-top: 0; }
+    .msg-bubble p { margin-bottom: 6px; }
+    .msg-bubble p:last-child { margin-bottom: 0; }
+    .msg-bubble ul { padding-left: 1.2rem; display: flex; flex-direction: column; gap: 5px; margin-bottom: 8px; }
+    .msg-bubble li { color: var(--gray-800); }
+    .insight-stat { display: inline-flex; align-items: center; background: var(--red-pale); border: 1px solid rgba(232,32,32,0.2); border-radius: 5px; padding: 0 5px; font-family: var(--mono); font-size: 11px; font-weight: 600; color: var(--red-dark); margin: 0 1px; }
+    .insight-stat.good { background: var(--green-pale); border-color: rgba(22,163,74,0.2); color: var(--green); }
+    .insight-chip { display: inline-flex; background: var(--gray-100); border: 1px solid var(--border2); border-radius: 5px; padding: 0 6px; font-family: var(--mono); font-size: 11px; color: var(--gray-600); margin: 0 1px; }
+    .typing-indicator { display: flex; gap: 5px; padding: 14px 18px; background: var(--gray-50); border: 1px solid var(--border); border-radius: 14px; border-top-left-radius: 4px; width: fit-content; }
+    .typing-dot { width: 6px; height: 6px; background: var(--red); border-radius: 50%; animation: bounce 1.2s infinite; }
+    .typing-dot:nth-child(2) { animation-delay: 0.2s; }
+    .typing-dot:nth-child(3) { animation-delay: 0.4s; }
+    @keyframes bounce { 0%,60%,100%{transform:translateY(0);opacity:0.35} 30%{transform:translateY(-6px);opacity:1} }
+    .chat-input-area { padding: 1rem 1.25rem; border-top: 1px solid var(--border); display: flex; gap: 8px; flex-shrink: 0; }
+    .chat-input-wrap { flex: 1; background: var(--gray-50); border: 1.5px solid var(--border2); border-radius: 10px; display: flex; align-items: center; padding: 0 12px; transition: all 0.2s; }
+    .chat-input-wrap:focus-within { border-color: var(--red); box-shadow: 0 0 0 3px rgba(232,32,32,0.08); }
+    #chat-input { flex: 1; background: transparent; border: none; outline: none; padding: 11px 0; font-family: var(--font); font-size: 13px; color: var(--ink); }
+    #chat-input::placeholder { color: var(--gray-400); }
+    .btn-send { background: var(--red); border: none; border-radius: 10px; width: 40px; height: 40px; cursor: pointer; display: flex; align-items: center; justify-content: center; flex-shrink: 0; transition: all 0.2s; }
+    .btn-send:hover { background: var(--red-dark); transform: scale(1.05); }
+    .btn-send svg { width: 15px; height: 15px; }
+
+    /* ── SETTINGS / DATA ── */
+    .settings-section { margin-bottom: 1.5rem; }
+    .settings-title { font-size: 13px; font-weight: 700; margin-bottom: 10px; color: var(--ink); }
+    .export-row { display: flex; gap: 8px; flex-wrap: wrap; }
+    .danger-zone { border: 1px solid rgba(232,32,32,0.3); border-radius: var(--radius); padding: 1rem 1.25rem; background: var(--red-pale); }
+    .danger-title { font-size: 13px; font-weight: 700; color: var(--red); margin-bottom: 6px; }
+    .danger-sub { font-size: 12px; color: var(--gray-600); margin-bottom: 12px; }
+
+    /* ── UPGRADE BANNER ── */
+    .upgrade-banner { background: linear-gradient(135deg, #92400e, #d97706); color: white; border-radius: var(--radius); padding: 1rem 1.25rem; display: flex; justify-content: space-between; align-items: center; gap: 1rem; margin-bottom: 1rem; }
+    .upgrade-text { font-size: 13px; font-weight: 600; }
+    .upgrade-sub { font-size: 11px; opacity: 0.8; margin-top: 2px; }
+    .btn-upgrade { background: white; color: #92400e; border: none; border-radius: 8px; padding: 8px 16px; font-family: var(--font); font-size: 12px; font-weight: 700; cursor: pointer; transition: all 0.2s; flex-shrink: 0; }
+    .btn-upgrade:hover { transform: scale(1.03); }
+
+    /* ── MODAL ── */
+    .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.4); z-index: 200; display: flex; align-items: center; justify-content: center; padding: 1rem; opacity: 0; pointer-events: none; transition: opacity 0.2s; }
+    .modal-overlay.open { opacity: 1; pointer-events: all; }
+    .modal { background: white; border-radius: 20px; padding: 2rem; max-width: 480px; width: 100%; box-shadow: var(--shadow-lg); transform: translateY(10px); transition: transform 0.2s; }
+    .modal-overlay.open .modal { transform: translateY(0); }
+    .modal-title { font-size: 18px; font-weight: 700; margin-bottom: 6px; }
+    .modal-sub { font-size: 13px; color: var(--gray-600); margin-bottom: 1.5rem; }
+    .plan-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 1.5rem; }
+    .plan-card { border: 2px solid var(--border2); border-radius: 14px; padding: 1.25rem; cursor: pointer; transition: all 0.2s; }
+    .plan-card.selected { border-color: var(--red); background: var(--red-pale); }
+    .plan-name { font-size: 16px; font-weight: 800; margin-bottom: 4px; }
+    .plan-price { font-size: 22px; font-weight: 800; color: var(--red); margin-bottom: 8px; }
+    .plan-price span { font-size: 12px; font-weight: 500; color: var(--gray-600); }
+    .plan-features { display: flex; flex-direction: column; gap: 4px; }
+    .plan-feature { font-size: 12px; display: flex; gap: 6px; align-items: flex-start; }
+    .plan-feature::before { content: '✓'; color: var(--green); font-weight: 700; flex-shrink: 0; }
+    .plan-feature.locked::before { content: '🔒'; }
+
+    /* ── FOOTER ── */
+    .app-footer { border-top: 1px solid var(--border); margin-top: 2rem; }
+    .footer-inner { max-width: 1400px; margin: 0 auto; padding: 14px 2rem 20px; text-align: center; }
+    .footer-disclaimer { font-family: var(--mono); font-size: 10px; color: var(--gray-400); line-height: 1.6; }
+    .footer-copy { margin-top: 6px; font-family: var(--mono); font-size: 10px; color: var(--gray-400); }
+
+    /* ── ANIMATIONS ── */
+    @keyframes fadeUp { from{opacity:0;transform:translateY(6px)} to{opacity:1;transform:translateY(0)} }
+
+    /* ── RESPONSIVE ── */
+    @media (max-width: 960px) {
+      .view-grid { grid-template-columns: 1fr; }
+      .analytics-grid { grid-template-columns: 1fr; }
+      .totals-inner { grid-template-columns: repeat(2, 1fr); }
+    }
+    @media (max-width: 520px) {
+      .totals-inner { grid-template-columns: 1fr 1fr; }
+      .header-inner { padding: 0 1rem; }
+      .view { padding: 1rem 1rem 3rem; }
+      .nav-inner { padding: 0 0.5rem; }
+      .logo-tagline { display: none; }
+    }
+
+    /* ── PRO LOCK ── */
+    .pro-lock { position: relative; }
+    .pro-lock-overlay { position: absolute; inset: 0; background: rgba(255,255,255,0.85); border-radius: var(--radius); display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 10; gap: 8px; backdrop-filter: blur(2px); }
+    .pro-lock-overlay .lock-icon { font-size: 28px; }
+    .pro-lock-overlay p { font-size: 12px; color: var(--gray-600); text-align: center; max-width: 200px; }
+  </style>
+</head>
+<body>
+
+<!-- ══════════════════════ APP ══════════════════════ -->
+<div id="app" style="display:none">
+
+  <!-- HEADER -->
+  <header>
+    <div class="header-inner">
+      <div class="logo-wrap">
+        <img src="logo.png" alt="$PEND-R₹" class="logo-img" onerror="this.style.display='none'">
+        <div class="logo-tagline">Friend in Spend</div>
+      </div>
+      <div class="header-right">
+        <span class="header-user" id="header-user"></span>
+        <span class="header-plan" id="header-plan" onclick="openUpgradeModal()">FREE</span>
+        <button class="btn-logout" onclick="doLogout()">Sign out</button>
+      </div>
+    </div>
+  </header>
+
+  <!-- NAV -->
+  <div class="nav-bar">
+    <div class="nav-inner">
+      <button class="nav-tab active" onclick="switchView('dashboard')" id="tab-dashboard">📊 Dashboard</button>
+      <button class="nav-tab" onclick="switchView('transactions')" id="tab-transactions">💳 Transactions</button>
+      <button class="nav-tab" onclick="switchView('budgets')" id="tab-budgets">🎯 Budgets</button>
+      <button class="nav-tab" onclick="switchView('recurring')" id="tab-recurring">🔁 Recurring <span class="pro-badge">PRO</span></button>
+      <button class="nav-tab" onclick="switchView('analytics')" id="tab-analytics">📈 Analytics <span class="pro-badge">PRO</span></button>
+      <button class="nav-tab" onclick="switchView('data')" id="tab-data">⚙️ Data</button>
+    </div>
+  </div>
+
+  <!-- TOTALS -->
+  <div class="totals-strip">
+    <div class="totals-inner">
+      <div class="total-cell" style="animation-delay:0.05s">
+        <div class="total-label">This month</div>
+        <div class="total-value" id="total-month">$0.00</div>
+      </div>
+      <div class="total-cell" style="animation-delay:0.1s">
+        <div class="total-label">All time</div>
+        <div class="total-value" id="total-all">$0.00</div>
+      </div>
+      <div class="total-cell" style="animation-delay:0.15s">
+        <div class="total-label">Transactions</div>
+        <div class="total-value" id="total-count">0</div>
+      </div>
+      <div class="total-cell" style="animation-delay:0.2s">
+        <div class="total-label">Accounts</div>
+        <div class="total-value" id="total-accounts">0</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ────── VIEW: DASHBOARD ────── -->
+  <div class="view active" id="view-dashboard">
+    <div class="view-grid">
+      <div class="left-col">
+        <!-- Import card -->
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title">Import Transactions</div>
+          </div>
+          <div class="card-body">
+            <div style="margin-bottom:10px">
+              <label class="auth-label" style="margin-bottom:6px;display:block">Account</label>
+              <div class="account-row" id="account-selector">
+                <span class="acct-chip active" data-acct="Everyday">💳 Everyday</span>
+                <span class="acct-chip" data-acct="Savings">🏦 Savings</span>
+                <span class="acct-chip" data-acct="Credit Card">💰 Credit Card</span>
+                <span class="acct-chip" data-acct="+ Add" onclick="addAccount()">+ Add</span>
+              </div>
+            </div>
+            <div class="how-to">
+              <div class="how-to-title">How to import</div>
+              <ol>
+                <li>Login to your bank → download <strong>CSV</strong></li>
+                <li>Drag & drop below, or paste CSV text</li>
+                <li>Click <strong>Analyse</strong> — duplicates auto-detected</li>
+              </ol>
+            </div>
+            <div class="file-drop" id="file-drop" onclick="document.getElementById('file-input').click()">
+              <input type="file" id="file-input" accept=".csv,.txt">
+              <div class="file-drop-icon">📂</div>
+              <div class="file-drop-text">Drop CSV file here or <strong>click to browse</strong></div>
+            </div>
+            <textarea id="csv-paste" placeholder="Or paste CSV text here..."></textarea>
+            <div class="btn-row">
+              <button class="btn-primary" id="btn-analyse">Analyse</button>
+              <button class="btn-ghost" id="btn-clear">Clear</button>
+            </div>
+            <div id="upload-status"></div>
+          </div>
+        </div>
+
+        <!-- Chart -->
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title">Spend by category</div>
+          </div>
+          <div class="card-body" style="padding-bottom:1.25rem">
+            <div id="chart-wrap" style="position:relative;"><canvas id="categoryChart"></canvas></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- RIGHT: AI Chat -->
+      <div class="right-col">
+        <div class="chat-card">
+          <div class="chat-header">
+            <div class="ai-dot"></div>
+            <div class="chat-header-title">Finance Assistant</div>
+            <div class="chat-header-sub">powered by AI</div>
+          </div>
+          <div class="chat-messages" id="chat-messages">
+            <div class="chat-empty" id="chat-empty">
+              <img src="logo.png" alt="logo" class="chat-empty-logo" onerror="this.style.display='none'">
+              <div class="chat-empty-title">Your AI finance assistant</div>
+              <p>Import your bank statement and I'll categorise your spending, detect patterns, and answer any questions.</p>
+            </div>
+          </div>
+          <div class="chat-input-area">
+            <div class="chat-input-wrap">
+              <input type="text" id="chat-input" placeholder="Ask something about your spending..." />
+            </div>
+            <button class="btn-send" id="btn-send">
+              <svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                <line x1="22" y1="2" x2="11" y2="13"></line>
+                <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+              </svg>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ────── VIEW: TRANSACTIONS ────── -->
+  <div class="view" id="view-transactions">
+    <div class="card">
+      <div class="card-header">
+        <div class="card-title">All Transactions</div>
+        <span id="txn-count-label" style="font-size:11px;color:var(--gray-400);font-family:var(--mono)"></span>
+      </div>
+      <div class="card-body" style="padding-bottom:0">
+        <div class="search-row">
+          <div class="search-wrap">
+            <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+            <input type="text" class="search-input" id="txn-search" placeholder="Search transactions...">
+          </div>
+          <select class="filter-select" id="txn-cat-filter" style="width:160px">
+            <option value="">All categories</option>
+          </select>
+          <select class="filter-select" id="txn-acct-filter" style="width:140px">
+            <option value="">All accounts</option>
+          </select>
+        </div>
+      </div>
+      <div class="txn-scroll" id="txn-scroll-all" style="max-height:600px">
+        <div id="all-txn-list"><div class="txn-empty">No transactions yet — import some data first.</div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ────── VIEW: BUDGETS ────── -->
+  <div class="view" id="view-budgets">
+    <div id="budget-upgrade-banner" class="upgrade-banner" style="display:none">
+      <div>
+        <div class="upgrade-text">💼 Budget Tracking</div>
+        <div class="upgrade-sub">Set category limits and get overspend alerts</div>
+      </div>
+      <button class="btn-upgrade" onclick="openUpgradeModal()">Upgrade to Pro</button>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem" id="budget-layout">
+      <div>
+        <div class="card" style="margin-bottom:1rem">
+          <div class="card-header">
+            <div class="card-title">Monthly Budgets</div>
+            <span id="budget-month-label" style="font-size:11px;color:var(--gray-400);font-family:var(--mono)"></span>
+          </div>
+          <div class="card-body" id="budget-list">
+            <div class="txn-empty">No budgets set yet — add one below.</div>
+          </div>
+          <div class="add-budget-form">
+            <select id="budget-cat-select">
+              <option value="">Category...</option>
+            </select>
+            <input type="number" id="budget-amount-input" placeholder="Limit $" min="1" style="width:100px">
+            <button class="btn-sm btn-sm-primary" onclick="addBudget()">Add</button>
+          </div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-header"><div class="card-title">Month-over-Month</div></div>
+        <div class="card-body">
+          <div style="position:relative;height:300px"><canvas id="momChart"></canvas></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ────── VIEW: RECURRING ────── -->
+  <div class="view" id="view-recurring">
+    <div id="rec-pro-lock" class="pro-lock" style="position:relative;min-height:400px">
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">Recurring Expenses</div>
+          <span id="rec-monthly-total" style="font-size:13px;font-weight:700;font-family:var(--mono);color:var(--red)"></span>
+        </div>
+        <div class="card-body">
+          <div class="recurring-grid" id="recurring-list">
+            <div class="txn-empty">No recurring expenses detected yet. Import at least 2 months of data.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ────── VIEW: ANALYTICS ────── -->
+  <div class="view" id="view-analytics">
+    <div id="analytics-pro-lock" class="pro-lock" style="position:relative">
+      <div class="analytics-grid">
+        <!-- Category trends -->
+        <div class="card">
+          <div class="card-header"><div class="card-title">Category Trends</div></div>
+          <div class="card-body">
+            <div id="trends-list"><div class="txn-empty">Import data to see trends.</div></div>
+          </div>
+        </div>
+        <!-- Income vs Expense -->
+        <div class="card">
+          <div class="card-header"><div class="card-title">Spending Breakdown</div></div>
+          <div class="card-body">
+            <div style="position:relative;height:260px"><canvas id="pieChart"></canvas></div>
+          </div>
+        </div>
+        <!-- Perceived vs actual -->
+        <div class="card">
+          <div class="card-header"><div class="card-title">Perceived vs Actual</div></div>
+          <div class="card-body">
+            <p style="font-size:12px;color:var(--gray-600);margin-bottom:12px">Enter what you <em>think</em> you spend vs what you actually do:</p>
+            <div class="perceived-form" id="perceived-form"></div>
+          </div>
+        </div>
+        <!-- Top categories -->
+        <div class="card">
+          <div class="card-header"><div class="card-title">Top Spending Categories</div></div>
+          <div class="card-body">
+            <div id="top-cats-list"><div class="txn-empty">Import data to see top categories.</div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ────── VIEW: DATA ────── -->
+  <div class="view" id="view-data">
+    <div style="max-width:600px">
+      <div class="card" style="margin-bottom:1.5rem">
+        <div class="card-header"><div class="card-title">Export Data</div></div>
+        <div class="card-body">
+          <p style="font-size:13px;color:var(--gray-600);margin-bottom:14px">Download your transactions in various formats.</p>
+          <div class="export-row">
+            <button class="btn-ghost" onclick="exportCSV()">📥 Export CSV</button>
+            <button class="btn-ghost" onclick="exportJSON()">📦 Export JSON</button>
+          </div>
+        </div>
+      </div>
+      <div class="card" style="margin-bottom:1.5rem">
+        <div class="card-header"><div class="card-title">Account Management</div></div>
+        <div class="card-body" id="accounts-list">
+          <div class="txn-empty">No accounts yet.</div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-header"><div class="card-title">Danger Zone</div></div>
+        <div class="card-body">
+          <div class="danger-zone">
+            <div class="danger-title">⚠️ Delete all data</div>
+            <div class="danger-sub">This permanently deletes all transactions, budgets, and settings for your account. This cannot be undone.</div>
+            <button class="btn-primary" style="background:var(--red);max-width:200px" onclick="deleteAllData()">Delete Everything</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div><!-- end #app -->
+
+<!-- ══════ UPGRADE MODAL ══════ -->
+<div class="modal-overlay" id="upgrade-modal">
+  <div class="modal">
+    <div class="modal-title">Upgrade to Pro</div>
+    <div class="modal-sub">Unlock all features and get more from your money.</div>
+    <div class="plan-grid">
+      <div class="plan-card selected" id="plan-free-card">
+        <div class="plan-name">Free</div>
+        <div class="plan-price">$0 <span>/ mo</span></div>
+        <div class="plan-features">
+          <div class="plan-feature">CSV import</div>
+          <div class="plan-feature">AI categorisation</div>
+          <div class="plan-feature">Basic insights</div>
+          <div class="plan-feature locked">Budget tracking</div>
+          <div class="plan-feature locked">Recurring detection</div>
+          <div class="plan-feature locked">Advanced analytics</div>
+        </div>
+      </div>
+      <div class="plan-card" id="plan-pro-card" onclick="selectPro()">
+        <div class="plan-name" style="color:var(--amber)">⭐ Pro</div>
+        <div class="plan-price" style="color:var(--amber)">$9 <span>/ mo</span></div>
+        <div class="plan-features">
+          <div class="plan-feature">Everything in Free</div>
+          <div class="plan-feature">Budget tracking</div>
+          <div class="plan-feature">Recurring detection</div>
+          <div class="plan-feature">Full trend analytics</div>
+          <div class="plan-feature">Perceived vs actual</div>
+          <div class="plan-feature">Priority AI support</div>
+        </div>
+      </div>
+    </div>
+    <div style="display:flex;gap:8px">
+      <button class="btn-ghost" style="flex:1" onclick="closeUpgradeModal()">Maybe later</button>
+      <button class="btn-primary" style="flex:2" onclick="activatePro()">Upgrade Now — $9/mo</button>
+    </div>
+  </div>
+</div>
+
+<footer class="app-footer">
+  <div class="footer-inner">
+    <div class="footer-disclaimer">⚠️ SPENDR is a general-purpose financial tracking tool. Insights are for informational purposes only and do not constitute financial advice. Consult a qualified financial professional before making decisions.</div>
+    <div class="footer-copy">© 2026 Cyalnix Pty Ltd. All rights reserved.</div>
+  </div>
+</footer>
+
+<script src="app.js"></script>
+</body>
+</html>
