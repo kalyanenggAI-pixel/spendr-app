@@ -673,11 +673,21 @@
 </footer>
 
 <script>
-  // 👇 AUTH CHECK — uses spendr_session (same key app.js writes on login)
-  if (!localStorage.getItem('spendr_session')) {
+  // 👇 AUTH CHECK HERE
+  const currentUser = localStorage.getItem('spendr_current_user');
+
+  if (!currentUser) {
     window.location.href = "landing.html";
+  } else {
+    document.addEventListener("DOMContentLoaded", () => {
+      document.getElementById("app").style.display = "block";
+
+      const userData = JSON.parse(localStorage.getItem('spendr_user_' + currentUser));
+      if (userData && userData.name) {
+        document.getElementById("header-user").innerText = "Hi, " + userData.name;
+      }
+    });
   }
-  // app.js restores the session and calls renderAll() — no duplicate logic here
 </script>
 
 <script src="app.js"></script>

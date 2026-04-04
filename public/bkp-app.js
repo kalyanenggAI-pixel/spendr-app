@@ -115,13 +115,11 @@ function doLogout() {
   }
 }
 
-// Check existing session — must run after DOM ready so charts render into a visible canvas
-document.addEventListener('DOMContentLoaded', () => {
-  const savedSession = localStorage.getItem('spendr_session');
-  if (savedSession) {
-    try { loginSuccess(JSON.parse(savedSession)); } catch(e) { localStorage.removeItem('spendr_session'); }
-  }
-});
+// Check existing session
+const savedSession = localStorage.getItem('spendr_session');
+if (savedSession) {
+  try { loginSuccess(JSON.parse(savedSession)); } catch(e) { localStorage.removeItem('spendr_session'); }
+}
 
 // ── NAV ──────────────────────────────────────────────────────
 function switchView(name) {
@@ -379,7 +377,7 @@ function renderChart() {
   const canvas = document.getElementById('categoryChart');
   if (!canvas) return;
   if (categoryChart) { categoryChart.destroy(); categoryChart = null; }
-  const current = expenses;
+  const current = expenses.filter(e => e.fresh !== false);
   const totals = {};
   current.forEach(e => { totals[e.cat] = (totals[e.cat]||0) + e.amount; });
   const sorted = Object.entries(totals).filter(([,v])=>v>0).sort((a,b)=>b[1]-a[1]);
