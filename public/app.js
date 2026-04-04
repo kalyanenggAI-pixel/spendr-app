@@ -175,7 +175,53 @@ function activatePro() {
   renderBudgets(); renderRecurring(); renderAnalytics();
   alert('🎉 You\'re now on Pro! All features unlocked.');
 }
-document.getElementById('upgrade-modal').addEventListener('click', function(e) { if (e.target === this) closeUpgradeModal(); });
+// ── DOM READY: attach all event listeners once the DOM is available ──
+document.addEventListener('DOMContentLoaded', () => {
+  // Close upgrade modal on backdrop click
+  document.getElementById('upgrade-modal')?.addEventListener('click', function(e) { if (e.target === this) closeUpgradeModal(); });
+
+  // File drop / upload
+  const fileDrop  = document.getElementById('file-drop');
+  const fileInput = document.getElementById('file-input');
+  fileDrop?.addEventListener('dragover',  e => { e.preventDefault(); fileDrop.classList.add('drag'); });
+  fileDrop?.addEventListener('dragleave', () => fileDrop.classList.remove('drag'));
+  fileDrop?.addEventListener('drop', e => {
+    e.preventDefault(); fileDrop.classList.remove('drag');
+    const file = e.dataTransfer.files[0];
+    if (file) readFile(file);
+  });
+  fileInput?.addEventListener('change', () => { if (fileInput.files[0]) readFile(fileInput.files[0]); });
+
+  // Analyse / clear buttons
+  document.getElementById('btn-analyse')?.addEventListener('click', async () => {
+    const text = document.getElementById('csv-paste').value.trim();
+    if (!text || text.length < 10) return setStatus('Paste your CSV data first.', 'error');
+    setStatus('Reading transactions...', 'info');
+    try {
+      const rows = parseCSV(text);
+      if (!rows.length) return setStatus('No transactions found. Check your CSV.', 'error');
+      await importTransactions(rows);
+    } catch(e) { setStatus('Error: ' + e.message, 'error'); }
+  });
+
+  document.getElementById('btn-clear')?.addEventListener('click', () => {
+    if (!expenses.length) return;
+    if (!confirm('Clear all transactions?')) return;
+    expenses = []; currentTxns = []; chatHistory = [];
+    saveState(); renderAll(); clearChat(); setStatus('Cleared.', '');
+  });
+
+  // Chat
+  document.getElementById('btn-send')?.addEventListener('click', sendChatMessage);
+  document.getElementById('chat-input')?.addEventListener('keydown', e => {
+    if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendChatMessage(); }
+  });
+
+  // Search & filter
+  document.getElementById('txn-search')?.addEventListener('input', renderAllTransactions);
+  document.getElementById('txn-cat-filter')?.addEventListener('change', renderAllTransactions);
+  document.getElementById('txn-acct-filter')?.addEventListener('change', renderAllTransactions);
+});
 
 // ── ACCOUNTS ─────────────────────────────────────────────────
 function addAccount() {
@@ -198,53 +244,11 @@ function renderAccountSelector() {
 
 function selectAccount(name) { selectedAcct = name; renderAccountSelector(); }
 
-// ── FILE UPLOAD ───────────────────────────────────────────────
-const fileDrop  = document.getElementById('file-drop');
-const fileInput = document.getElementById('file-input');
-
-fileDrop?.addEventListener('dragover',  e => { e.preventDefault(); fileDrop.classList.add('drag'); });
-fileDrop?.addEventListener('dragleave', () => fileDrop.classList.remove('drag'));
-fileDrop?.addEventListener('drop', e => {
-  e.preventDefault(); fileDrop.classList.remove('drag');
-  const file = e.dataTransfer.files[0];
-  if (file) readFile(file);
-});
-fileInput?.addEventListener('change', () => { if (fileInput.files[0]) readFile(fileInput.files[0]); });
-
 function readFile(file) {
   const reader = new FileReader();
   reader.onload = e => { document.getElementById('csv-paste').value = e.target.result; setStatus('File loaded. Click Analyse.', 'info'); };
   reader.readAsText(file);
 }
-
-// ── BUTTONS ──────────────────────────────────────────────────
-document.getElementById('btn-analyse')?.addEventListener('click', async () => {
-  const text = document.getElementById('csv-paste').value.trim();
-  if (!text || text.length < 10) return setStatus('Paste your CSV data first.', 'error');
-  setStatus('Reading transactions...', 'info');
-  try {
-    const rows = parseCSV(text);
-    if (!rows.length) return setStatus('No transactions found. Check your CSV.', 'error');
-    await importTransactions(rows);
-  } catch(e) { setStatus('Error: ' + e.message, 'error'); }
-});
-
-document.getElementById('btn-clear')?.addEventListener('click', () => {
-  if (!expenses.length) return;
-  if (!confirm('Clear all transactions?')) return;
-  expenses = []; currentTxns = []; chatHistory = [];
-  saveState(); renderAll(); clearChat(); setStatus('Cleared.', '');
-});
-
-document.getElementById('btn-send')?.addEventListener('click', sendChatMessage);
-document.getElementById('chat-input')?.addEventListener('keydown', e => {
-  if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendChatMessage(); }
-});
-
-// ── SEARCH & FILTER ──────────────────────────────────────────
-document.getElementById('txn-search')?.addEventListener('input', renderAllTransactions);
-document.getElementById('txn-cat-filter')?.addEventListener('change', renderAllTransactions);
-document.getElementById('txn-acct-filter')?.addEventListener('change', renderAllTransactions);
 
 // ── CSV PARSER ────────────────────────────────────────────────
 function parseCSV(text) {
